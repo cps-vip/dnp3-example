@@ -505,221 +505,71 @@ dnp3_event_buffer_config_t get_event_buffer_config()
                                          3   // octet string
     );
 }
-// ANCHOR_END: event_buffer_config
 
-// ANCHOR: create_outstation_config
-dnp3_outstation_config_t get_outstation_config()
+dnp3_outstation_config_t create_outstation_config(uint16_t outstation_addr, uint16_t master_addr)
 {
     // create an outstation configuration with default values
     dnp3_outstation_config_t config = dnp3_outstation_config_init(
-        // outstation address
-        1024,
-        // master address
-        1,
-        // event buffer sizes
+        outstation_addr,
+        master_addr,
         get_event_buffer_config()
     );
     // override the default application decoding level
     config.decode_level.application = DNP3_APP_DECODE_LEVEL_OBJECT_VALUES;
     return config;
 }
-// ANCHOR_END: create_outstation_config
-
-dnp3_tls_server_config_t get_tls_self_signed_config()
-{
-    // ANCHOR: tls_self_signed_config
-    dnp3_tls_server_config_t config = dnp3_tls_server_config_init(
-        "test.com",
-        "./certs/self_signed/entity1_cert.pem",
-        "./certs/self_signed/entity2_cert.pem",
-        "./certs/self_signed/entity2_key.pem",
-        "" // no password
-    );
-    config.certificate_mode = DNP3_CERTIFICATE_MODE_SELF_SIGNED;
-    // ANCHOR_END: tls_self_signed_config
-    return config;
-}
-
-dnp3_tls_server_config_t get_tls_ca_config()
-{
-    // ANCHOR: tls_ca_chain_config
-    dnp3_tls_server_config_t config = dnp3_tls_server_config_init(
-        "test.com",
-        "./certs/ca_chain/ca_cert.pem",
-        "./certs/ca_chain/entity2_cert.pem",
-        "./certs/ca_chain/entity2_key.pem",
-        "" // no password
-    );
-    // ANCHOR_END: tls_ca_chain_config
-    return config;
-}
 
 void init_database(dnp3_outstation_t *outstation)
 {
-    // setup initial points
-    // ANCHOR: database_init
     dnp3_database_transaction_t startup_transaction = {
         .execute = &outstation_transaction_startup,
         .on_destroy = NULL,
         .ctx = NULL,
     };
     dnp3_outstation_transaction(outstation, startup_transaction);
-    // ANCHOR_END: database_init
 }
 
-int run_server(dnp3_outstation_server_t *server)
-{
+void destroy_outstation(dnp3_outstation_t *outstation) {
+    dnp3_outstation_destroy(outstation);
+}
+
+dnp3_address_filter_t* create_address_filter(const char *address_filter) {
+    dnp3_address_filter_t *filter = NULL;
+    if (strcmp(address_filter, "any") == 0) {
+        filter = dnp3_address_filter_any();
+    } else {
+        // TODO: Since this is an out variable, is filter being made on the stack?
+        // Very important to check this
+        dnp3_param_error_t err = dnp3_address_filter_create(address_filter, &filter);
+        if (err) {
+            printf("Invalid address filter. Try \"any\" or a wildcard IP address. Err: %s \n", dnp3_param_error_to_string(err));
+            return NULL;
+        }
+    }
+    return filter;
+}
+
+void destroy_address_filter(dnp3_address_filter_t *filter) {
+    dnp3_address_filter_destroy(filter);
+}
+
+dnp3_outstation_t* add_outstation(dnp3_outstation_server_t *server, dnp3_address_filter_t *filter, dnp3_outstation_config_t config) {
     dnp3_outstation_t *outstation = NULL;
-    // ANCHOR: tcp_server_add_outstation
-    dnp3_address_filter_t *address_filter = dnp3_address_filter_any();
+    
     dnp3_param_error_t err = dnp3_outstation_server_add_outstation(
         server,
-        get_outstation_config(),
+        config,
         get_outstation_application(),
         get_outstation_information(),
         get_control_handler(),
         get_connection_state_listener(),
-        address_filter,
+        filter,
         &outstation
     );
-    dnp3_address_filter_destroy(address_filter);
-    // ANCHOR_END: tcp_server_add_outstation
 
     if (err) {
         printf("unable to add outstation: %s \n", dnp3_param_error_to_string(err));
-        return -1;
+        return NULL;
     }
-
-    init_database(outstation);
-
-    // Start the server
-    // ANCHOR: tcp_server_bind
-    err = dnp3_outstation_server_bind(server);
-    // ANCHOR_END: tcp_server_bind
-    if (err) {
-        printf("unable to bind server: %s \n", dnp3_param_error_to_string(err));
-        // cleanup the outstation before exit
-        dnp3_outstation_destroy(outstation);
-        return -1;
-    }
-
-    int ret = run_outstation(outstation);
-    // cleanup the outstation before exit
-    dnp3_outstation_destroy(outstation);
-    return ret;
-}
-
-int run_tcp_server(dnp3_runtime_t *runtime)
-{
-    // ANCHOR: create_tcp_server
-    dnp3_outstation_server_t* server = NULL;
-    dnp3_param_error_t err = dnp3_outstation_server_create_tcp_server(runtime, DNP3_LINK_ERROR_MODE_CLOSE, "127.0.0.1:20000", &server);
-    // ANCHOR_END: create_tcp_server
-
-    if (err) {    
-        printf("unable to create TCP server: %s \n", dnp3_param_error_to_string(err));
-        return -1;
-    }
-
-    int ret = run_server(server);
-    dnp3_outstation_server_destroy(server);
-    return ret;
-}
-
-int run_serial(dnp3_runtime_t* runtime)
-{
-    // ANCHOR: create_serial_server
-    dnp3_outstation_t* outstation = NULL;
-    dnp3_param_error_t err = dnp3_outstation_create_serial_session_2(
-        runtime,
-        "/dev/pts/4",                // change to a real port
-        dnp3_serial_settings_init(), // default settings
-        5000,                        // retry the port every 5 seconds
-        get_outstation_config(),
-        get_outstation_application(),
-        get_outstation_information(),
-        get_control_handler(),
-        get_port_state_listener(),
-        &outstation
-    );
-    // ANCHOR_END: create_serial_server
-
-    if (err) {
-        printf("unable to create serial outstation: %s \n", dnp3_param_error_to_string(err));
-        return -1;
-    }
-
-    return run_outstation(outstation);
-}
-
-int run_tls_server(dnp3_runtime_t *runtime, dnp3_tls_server_config_t config)
-{
-    // ANCHOR: create_tls_server
-    dnp3_outstation_server_t *server = NULL;
-    dnp3_param_error_t err = dnp3_outstation_server_create_tls_server(runtime, DNP3_LINK_ERROR_MODE_CLOSE, "127.0.0.1:20001", config, &server);
-    // ANCHOR_END: create_tls_server
-
-    if (err) {
-        printf("unable to create TLS server: %s \n", dnp3_param_error_to_string(err));
-        return -1;
-    }
-
-    int ret = run_server(server);
-    dnp3_outstation_server_destroy(server);
-    return ret;
-}
-
-int run_transport(int argc, char *argv[], dnp3_runtime_t* runtime)
-{    
-    if (argc != 2) {
-        printf("you must specify a transport type\n");
-        printf("usage: outstation-example <channel> (tcp, serial, tls-ca, tls-self-signed)\n");
-        return -1;
-    }
-
-    const char* type = argv[1];
-
-    if (strcmp(type, "tcp") == 0) {
-        return run_tcp_server(runtime);
-    }
-    else if (strcmp(type, "serial") == 0) {
-        return run_serial(runtime);
-    }
-    else if (strcmp(type, "tls-ca") == 0) {
-        return run_tls_server(runtime, get_tls_ca_config());
-    }
-    else if (strcmp(type, "tls-self-signed") == 0) {
-        return run_tls_server(runtime, get_tls_self_signed_config());
-    }
-    else {
-        printf("unknown channel type: %s\n", argv[1]);
-        return -1;
-    }
-}
-
-int main(int argc, char *argv[])
-{
-    // initialize logging with the default configuration
-    dnp3_configure_logging(dnp3_logging_config_init(), get_logger());
-    
-    // ANCHOR: runtime_decl
-    dnp3_runtime_t *runtime = NULL;
-    // ANCHOR_END: runtime_decl
-   
-    // Create runtime
-    dnp3_runtime_config_t runtime_config = dnp3_runtime_config_init();
-    runtime_config.num_core_threads = 4;
-    dnp3_param_error_t err = dnp3_runtime_create(runtime_config, &runtime);
-    if (err) {
-        printf("unable to create runtime: %s \n", dnp3_param_error_to_string(err));
-        return -1;
-    }
-
-    // use the command line arguments to run a specific transport type
-    int ret = run_transport(argc, argv, runtime);
-
-    // cleanup the runtime before exit
-    dnp3_runtime_destroy(runtime);
-
-    return ret;
+    return outstation;
 }
