@@ -50,3 +50,16 @@ class OutstationConfig(Structure):
                 ("max_read_request_headers", c_uint16),
                 ("max_controls_per_request", c_uint16),
                 ("class_zero", ClassZeroConfig)]
+
+class MasterChannelConfig(Structure):
+    _fields_ = [("master_address", c_uint16),
+                ("tx_buffer_size", c_uint16),
+                ("rx_buffer_size", c_uint16),
+                ("decode_level", DecodeLevel)]
+
+
+class RuntimeConfig(Structure):
+    _fields_ = [("num_core_threads", c_uint16)]
+
+class RuntimePtr(c_void_p):
+    pass

@@ -2,7 +2,7 @@ import os
 
 from ctypes import CDLL, c_void_p, c_char_p, c_uint16
 
-from .config_classes import OutstationConfig
+from config_classes import OutstationConfig
 from tcpserver.tcpserver import ServerPtr, TCPServer
 
 # Have to supply absolute path if the shared library isn't in /usr/lib
