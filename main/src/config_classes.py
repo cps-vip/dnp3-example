@@ -63,3 +63,15 @@ class RuntimeConfig(Structure):
 
 class RuntimePtr(c_void_p):
     pass
+
+class OutstationPtr(c_void_p):
+    pass
+
+class AddressFilterPtr(c_void_p):
+    pass
+
+class MasterChannelPtr(c_void_p):
+    pass
+
+class ServerPtr(c_void_p):
+    pass

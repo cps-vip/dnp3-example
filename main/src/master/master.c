@@ -544,11 +544,11 @@ int run_channel(dnp3_master_channel_t *channel, int outstation_addr)
     return 0;
 }
 
-int run_tcp_channel(dnp3_runtime_t *runtime, int master_addr, int outstation_addr, dnp3_master_channel_t* channel)
+int create_tcp_channel(dnp3_runtime_t *runtime, int master_addr, char* endpoint_ip_port, dnp3_master_channel_t* channel)
 {
     // ANCHOR: create_master_tcp_channel
-    dnp3_endpoint_list_t* endpoints = dnp3_endpoint_list_create("127.0.0.1:20000");
-    dnp3_endpoint_list_add(endpoints, "127.0.0.1:20001");
+    dnp3_endpoint_list_t* endpoints = dnp3_endpoint_list_create(endpoint_ip_port);
+    dnp3_endpoint_list_add(endpoints, endpoint_ip_port);
 
     dnp3_param_error_t err = dnp3_master_channel_create_tcp(
         runtime,
@@ -567,5 +567,27 @@ int run_tcp_channel(dnp3_runtime_t *runtime, int master_addr, int outstation_add
         return -1;
     }
 
-    return run_channel(channel, outstation_addr);
+    return channel;
+}
+
+// Initialises logger and runtime
+dnp3_runtime_t* init_runtime()
+{
+    dnp3_runtime_t *runtime = NULL;
+    // initialize logging with the default configuration
+    dnp3_configure_logging(dnp3_logging_config_init(), get_logger());
+    
+    // Create runtime
+    dnp3_runtime_config_t runtime_config = dnp3_runtime_config_init();
+    runtime_config.num_core_threads = 0;  // defaults to number of cores
+    dnp3_param_error_t err = dnp3_runtime_create(runtime_config, &runtime);
+    if (err) {
+        printf("unable to create runtime: %s \n", dnp3_param_error_to_string(err));
+        return NULL;
+    }
+    return runtime;
+
+}
+void destroy_runtime(dnp3_runtime_t *runtime) {
+    dnp3_runtime_destroy(runtime);
 }

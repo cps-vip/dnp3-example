@@ -2,21 +2,13 @@ import os
 
 from ctypes import CDLL, c_void_p, c_char_p, c_uint16
 
-from config_classes import OutstationConfig
-from tcpserver.tcpserver import ServerPtr, TCPServer
+from config_classes import OutstationConfig, ServerPtr, AddressFilterPtr, OutstationPtr
+from tcpserver.tcpserver import TCPServer
 
 # Have to supply absolute path if the shared library isn't in /usr/lib
 # Don't want to actually install these libraries in /usr/lib since they are just for testing
 libpath = os.path.abspath(os.path.join(os.path.dirname(__file__), r'../../build/liboutstation.so'))
 lib = CDLL(libpath)
-
-
-class OutstationPtr(c_void_p):
-    pass
-
-class AddressFilterPtr(c_void_p):
-    pass
-
 
 class Outstation:
     def __init__(self, outstation_addr: int, master_addr: int, address_filter: str):
