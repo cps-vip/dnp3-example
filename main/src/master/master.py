@@ -1,7 +1,7 @@
 import os
 
 from config_classes import MasterChannelConfig, RuntimePtr, MasterChannelPtr
-from ctypes import CDLL, c_void_p, c_char_p, c_uint16
+from ctypes import CDLL, c_void_p, c_char_p, c_uint16, c_wchar_p
 
 # Have to supply absolute path if the shared library isn't in /usr/lib
 # Don't want to actually install these libraries in /usr/lib since they are just for testing
@@ -11,11 +11,13 @@ lib = CDLL(libpath)
 
 class Master:
     def __init__(self, master_addr: int, endpoint_ip_port: str):
+        print('init')
         init_runtime = lib.init_runtime
         init_runtime.restype = RuntimePtr
         self._runtime = init_runtime()
+        print('runtime created')
         if self._runtime is None:
-            raise Exception()
+            raise Exception('runtime')
 
         self._master_channel = None
 
@@ -23,17 +25,20 @@ class Master:
         create_master_channel_config.argtypes = [c_uint16]
         create_master_channel_config.restype = MasterChannelConfig
         self.config = create_master_channel_config(master_addr)
+        print('after config')
 
         create_tcp_channel = lib.create_tcp_channel
-        create_tcp_channel.argtypes = [RuntimePtr, c_uint16, c_char_p, MasterChannelPtr]
+        create_tcp_channel.argtypes = [RuntimePtr, c_uint16, c_char_p]
         create_tcp_channel.restype = MasterChannelPtr
-        self._master_channel = create_tcp_channel(self._runtime, master_addr, self._master_channel, endpoint_ip_port)
-        
+        self._master_channel = create_tcp_channel(self._runtime, master_addr, endpoint_ip_port.encode())
+        print('after create tcp channel')
 
     def __enter__(self):
+        print('enter')
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
+        print('exit')
         if self._master_channel is not None:
             destroy_master_channel = lib.destroy_master_channel
             destroy_master_channel.argtypes = [MasterChannelPtr]
@@ -46,6 +51,7 @@ class Master:
             destroy_runtime(self._runtime)
     
     def run(self, outstation_addr: int):
+        print("run")
         run_channel = lib.run_channel
         run_channel.argtypes = [MasterChannelPtr, c_uint16]
         run_channel.restype = c_uint16

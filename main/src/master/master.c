@@ -544,9 +544,10 @@ int run_channel(dnp3_master_channel_t *channel, int outstation_addr)
     return 0;
 }
 
-int create_tcp_channel(dnp3_runtime_t *runtime, int master_addr, char* endpoint_ip_port, dnp3_master_channel_t* channel)
+dnp3_master_channel_t* create_tcp_channel(dnp3_runtime_t *runtime, int master_addr, char* endpoint_ip_port)
 {
     // ANCHOR: create_master_tcp_channel
+    dnp3_master_channel_t* channel = NULL;
     dnp3_endpoint_list_t* endpoints = dnp3_endpoint_list_create(endpoint_ip_port);
     dnp3_endpoint_list_add(endpoints, endpoint_ip_port);
 
@@ -564,7 +565,7 @@ int create_tcp_channel(dnp3_runtime_t *runtime, int master_addr, char* endpoint_
 
     if (err) {
         printf("unable to create TCP channel: %s \n", dnp3_param_error_to_string(err));
-        return -1;
+        return NULL;
     }
 
     return channel;
