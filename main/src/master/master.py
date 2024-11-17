@@ -11,13 +11,11 @@ lib = CDLL(libpath)
 
 class Master:
     def __init__(self, master_addr: int, endpoint_ip_port: str):
-        print('init')
         init_runtime = lib.init_runtime
         init_runtime.restype = RuntimePtr
         self._runtime = init_runtime()
-        print('runtime created')
         if self._runtime is None:
-            raise Exception('runtime')
+            raise Exception()
 
         self._master_channel = None
 
@@ -25,20 +23,16 @@ class Master:
         create_master_channel_config.argtypes = [c_uint16]
         create_master_channel_config.restype = MasterChannelConfig
         self.config = create_master_channel_config(master_addr)
-        print('after config')
 
         create_tcp_channel = lib.create_tcp_channel
         create_tcp_channel.argtypes = [RuntimePtr, c_uint16, c_char_p]
         create_tcp_channel.restype = MasterChannelPtr
         self._master_channel = create_tcp_channel(self._runtime, master_addr, endpoint_ip_port.encode())
-        print('after create tcp channel')
 
     def __enter__(self):
-        print('enter')
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        print('exit')
         if self._master_channel is not None:
             destroy_master_channel = lib.destroy_master_channel
             destroy_master_channel.argtypes = [MasterChannelPtr]
@@ -51,7 +45,6 @@ class Master:
             destroy_runtime(self._runtime)
     
     def run(self, outstation_addr: int):
-        print("run")
         run_channel = lib.run_channel
         run_channel.argtypes = [MasterChannelPtr, c_uint16]
         run_channel.restype = c_uint16
