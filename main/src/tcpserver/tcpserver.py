@@ -1,20 +1,12 @@
 import os
 
-from ctypes import CDLL, c_void_p, c_char_p, c_int
+from ctypes import CDLL, c_char_p, c_int
+from config_classes import RuntimePtr, ServerPtr
 
 # Have to supply absolute path if the shared library isn't in /usr/lib
 # Don't want to actually install these libraries in /usr/lib since they are just for testing
 libpath = os.path.abspath(os.path.join(os.path.dirname(__file__), r'../../build/libtcpserver.so'))
 lib = CDLL(libpath)
-
-
-class RuntimePtr(c_void_p):
-    pass
-
-
-class ServerPtr(c_void_p):
-    pass
-
 
 class TCPServer:
     def __init__(self, socket_addr: str):
@@ -51,5 +43,4 @@ class TCPServer:
         start_server.restype = c_int
         if start_server(self.server) == -1:
             raise Exception()
-
 
