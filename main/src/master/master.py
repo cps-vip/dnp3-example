@@ -1,7 +1,7 @@
 import os
 
 from config_classes import MasterChannelConfig, RuntimePtr, MasterChannelPtr
-from ctypes import CDLL, c_void_p, c_char_p, c_uint16, c_wchar_p
+from ctypes import CDLL, c_char_p, c_uint16
 
 # Have to supply absolute path if the shared library isn't in /usr/lib
 # Don't want to actually install these libraries in /usr/lib since they are just for testing
@@ -33,15 +33,10 @@ class Master:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self._master_channel is not None:
-            destroy_master_channel = lib.destroy_master_channel
-            destroy_master_channel.argtypes = [MasterChannelPtr]
-            destroy_master_channel.restype = None
-            destroy_master_channel(self._master_channel)
         if self._runtime is not None:
             destroy_runtime = lib.destroy_runtime
             destroy_runtime.argtypes = [RuntimePtr]
-            destroy_server.restype = None
+            destroy_runtime.restype = None
             destroy_runtime(self._runtime)
     
     def run(self, outstation_addr: int):

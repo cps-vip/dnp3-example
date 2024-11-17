@@ -1,6 +1,6 @@
 import os
 
-from ctypes import CDLL, c_void_p, c_char_p, c_uint16
+from ctypes import CDLL, c_char_p, c_uint16, c_int
 
 from config_classes import OutstationConfig, ServerPtr, AddressFilterPtr, OutstationPtr
 from tcpserver.tcpserver import TCPServer
@@ -60,3 +60,12 @@ class Outstation:
         init_database.restype = None
         init_database(self._outstation)
 
+    def run(self):
+        """
+        Starts the main input loop for the outstation
+        """
+        run_outstation = lib.run_outstation
+        run_outstation.argtypes = [OutstationPtr]
+        run_outstation.restype = c_int
+        print("Running")
+        return run_outstation(self._outstation)

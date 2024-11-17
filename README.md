@@ -27,11 +27,22 @@ cmake --build .
 
 ## Custom Example
 
-*NOTHING HERE WORKS YET*
+```bash
+cd main
+mkdir build
+cd build
 
-Everything outside default_example is where our custom integration example lives. 
-* main.py will create a Master and Outstations
-* Most of the actual communication logic will be in the C files, while the Python files (besides main.py) will expose a class that calls functions from the C files.
+# Build the outstation, TCP server, and master shared libraries
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
+make
 
-Note that the CMakeLists.txt is different between default_example and the one in src/. This is because we create a shared library out of the C files to call from the Python files.
+cd ../src
+python run_outstation.py
 
+# Open another terminal in the same directory
+python run_master.py
+
+# Now try typing commands in either terminal; should work the same as the default example
+```
+
+TODO: rest of documentation

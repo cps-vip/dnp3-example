@@ -1,6 +1,6 @@
 import os
 
-from ctypes import CDLL, c_void_p, c_char_p, c_int
+from ctypes import CDLL, c_char_p, c_int
 from config_classes import RuntimePtr, ServerPtr
 
 # Have to supply absolute path if the shared library isn't in /usr/lib
@@ -43,5 +43,4 @@ class TCPServer:
         start_server.restype = c_int
         if start_server(self.server) == -1:
             raise Exception()
-
 
