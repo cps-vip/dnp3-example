@@ -1,3 +1,5 @@
+c_api_example/dnp3-module/src/dnp3/include/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
