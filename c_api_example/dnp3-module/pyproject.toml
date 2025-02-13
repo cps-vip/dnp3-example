@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnp3-module"
+version = "0.1.0"
+description = "DNP3 extension module"
+authors = [{ name = "Kaden McCartney", email = "kmccartney7@gatech.edu" }]
+requires-python = ">=3.11"
+
+# [tool.setuptools]
+# ext-modules = [
+    # { name = "dnp3.outstation", sources = ["dnp3/outstation.c"], include-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/include"] },
+    # { name = "dnp3.outstation", sources = ["dnp3/outstation.c"], runtime-library-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu"], library-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu" ], libraries = ["dnp3_ffi"], include-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/include"], extra-compile-args = ["-Wl,-soname -L/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu -Wl,-rpath,/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu -ldnp3_ffi"] },
+    # { name = "dnp3.tcpserver", sources = ["dnp3/tcpserver.c"], runtime-library-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu"], library-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu"], libraries = ["dnp3_ffi"], include-dirs = ["/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/include"], extra-compile-args = ["-Wl,-soname -L/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu -Wl,-rpath,/home/steel/git/dnp3-example/c_api_example/dnp3-module/build/_deps/dnp3-src/cmake/../lib/x86_64-unknown-linux-gnu -ldnp3_ffi"] }
+    # { name = "dnp3.master", sources = ["dnp3/master.c"], library-dirs = ["build"], libraries = ["~/git/dnp3-example/c_api_example/dnp3-module/build/"] },
+# ]
