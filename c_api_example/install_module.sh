@@ -13,6 +13,8 @@ else
 fi
 
 cd dnp3-module
+mkdir -p src/dnp3/include
+mkdir -p src/dnp3/lib
 
 # Use CMake to download the Rust DNP3 library
 # Also want to set the DNP3_RUST_TARGET variable from the CMake as an env variable
