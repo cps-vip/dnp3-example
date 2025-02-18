@@ -1,12 +1,7 @@
 # Python Extension Module Example
-## Instructions
-If on the Debian VM, install the following packages:
+This method gives the most functionality and flexibility, but also the most complexity. Unlike the ctypes example, using a Python extension module allows you to call the C methods like any normal Python module. Additionally, C code is able to call Python, allowing things like using Python's logger for the dnp3 library.
 
-```bash
-sudo apt install -y python3 python-is-python3 pip python3.11-venv cmake
-```
-
-Then, run the following commands:
+## Steps
 ```bash
 ./install_module.sh
 

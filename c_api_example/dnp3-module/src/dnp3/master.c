@@ -1,19 +1,120 @@
 #include <Python.h>
 #include <inttypes.h>
 #include <stddef.h>
+#include <syscall.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdatomic.h>
+#include <pthread.h>
 
+#include "ceval.h"
+#include "critical_section.h"
 #include "dnp3.h"
 
-// ANCHOR: logging_callback
-// callback which will receive log messages
-void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) { printf("%s", msg); }
+static pthread_mutex_t pyContextLock = PTHREAD_MUTEX_INITIALIZER;
+static atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
 
-dnp3_logger_t get_logger()
-{
+    /*pthread_mutex_lock(&pyContextLock);                            \*/
+    /*pthread_mutex_unlock(&pyContextLock);                          \*/
+    /*printf("Trying to acquire from thread %lu\n", (unsigned long)pthread_self()); \*/
+    /*printf("Acquired from thread %lu\n", (unsigned long)pthread_self());   \*/
+    /*printf("Released mutex %lu\n", (unsigned long)pthread_self());   \*/
+#define PY_SAFE_CONTEXT(expr)                                      \
+{                                                                  \
+    PyGILState_STATE gstate; \
+    printf("Trying to grab... %lu\n", (unsigned long)pthread_self());   \
+    gstate = PyGILState_Ensure();                                  \
+    printf("Ensure gstate %lu\n", (unsigned long)pthread_self());   \
+    expr;                                                          \
+    PyGILState_Release(gstate);                                    \
+    printf("Released gstate %lu\n", (unsigned long)pthread_self());   \
+}
+
+static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
+    static PyObject *logging_library = NULL;
+    static PyObject *logging_object = NULL;
+    if (atomic_load(&is_shutting_down)) {
+        return;
+    }
+    if (logging_library == NULL || logging_object == NULL) {
+        logging_library = PyImport_ImportModule("logging");
+        if (logging_library == NULL) {
+            PyErr_Print();
+            return;
+        }
+
+        logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "master");
+        if (logging_object == NULL) {
+            PyErr_Print();
+            Py_DECREF(logging_library);
+            return;
+        }
+    }
+
+    pthread_mutex_lock(&pyContextLock);                            \
+    printf("Trying to grab... %ld\n", syscall(SYS_gettid));   \
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+    printf("Ensured gstate %ld\n", syscall(SYS_gettid));   \
+
+
+
+    // Just to be 100% safe...
+    /*char *dup_msg = strdup(msg);*/
+    /*if (dup_msg == NULL) {*/
+    /*    fprintf(stderr, "Failed to allocate memory for log message\n");*/
+    /*    printf("Releasing gstate %ld\n", syscall(SYS_gettid));   \*/
+    /*    PyGILState_Release(gstate);*/
+    /*    return;*/
+        /*goto end;*/
+    /*}*/
+    /*PyObject *logging_message = PyUnicode_FromString(msg);*/
+    /*free(dup_msg);*/
+
+    /*if (logging_message == NULL) {*/
+    /*    PyErr_Print();*/
+    /*    printf("Releasing gstate %ld\n", syscall(SYS_gettid));   \*/
+    /*    PyGILState_Release(gstate);*/
+    /*    return;*/
+    /*}*/
+
+    const char *method_name;
+    switch (level) {
+        // Python's logger doesn't have a trace level
+        case DNP3_LOG_LEVEL_TRACE:
+        case DNP3_LOG_LEVEL_DEBUG:
+            method_name = "debug";
+            break;
+        case DNP3_LOG_LEVEL_INFO:
+            method_name = "info";
+            break;
+        case DNP3_LOG_LEVEL_WARN:
+            method_name = "warning";
+            break;
+        case DNP3_LOG_LEVEL_ERROR:
+            method_name = "error";
+            break;
+        default:
+            method_name = "info";
+            break;
+    }
+
+    // Returns None, which is an immortal object since Python 3.12 (https://peps.python.org/pep-0683/)
+    // So no need to Py_DECREF the return value
+
+    /*PyObject_CallMethod(logging_object, method_name, "O", logging_message);*/
+    /*Py_DECREF(logging_message);*/
+    PyGILState_Release(gstate);
+
+    pthread_mutex_unlock(&pyContextLock);                          \
+    printf("Releasing gstate %ld\n", syscall(SYS_gettid));
+    /*end:*/
+    /*);*/
+}
+
+dnp3_logger_t get_logger() {
     return (dnp3_logger_t){
         // function pointer where log messages will be sent
         .on_message = &on_log_message,
@@ -26,7 +127,18 @@ dnp3_logger_t get_logger()
 // ANCHOR_END: logging_callback
 
 // ClientState listener callback
-void client_state_on_change(dnp3_client_state_t state, void *arg) { printf("ClientState = %s\n", dnp3_client_state_to_string(state)); }
+void client_state_on_change(dnp3_client_state_t state, void *arg) { 
+    /*printf("ClientState = %s\n", dnp3_client_state_to_string(state)); */
+
+    /*char* string;*/
+    /*if (asprintf(&string, "ClientState = %s\n", dnp3_client_state_to_string(state)) < 0) {*/
+    /*    on_log_message(DNP3_LOG_LEVEL_ERROR, "Unable to allocate memory for log message", NULL);*/
+    /*    return;*/
+    /*}*/
+    /**/
+    /*on_log_message(DNP3_LOG_LEVEL_INFO, string, NULL);*/
+    /*free(string);*/
+}
 
 dnp3_client_state_listener_t get_client_state_listener()
 {
@@ -339,7 +451,6 @@ void destroy_channel(dnp3_master_channel_t *channel) {
 
 dnp3_master_channel_t* create_tcp_channel(dnp3_runtime_t *runtime, int master_addr, char* endpoint_socket_addr, dnp3_master_channel_config_t *config)
 {
-    // ANCHOR: create_master_tcp_channel
     dnp3_master_channel_t* channel = NULL;
     dnp3_endpoint_list_t* endpoints = dnp3_endpoint_list_create(endpoint_socket_addr);
 
@@ -368,7 +479,7 @@ dnp3_runtime_t* init_runtime()
     dnp3_runtime_t *runtime = NULL;
     // initialize logging with the default configuration
     dnp3_configure_logging(dnp3_logging_config_init(), get_logger());
-    
+
     // Create runtime
     dnp3_runtime_config_t runtime_config = dnp3_runtime_config_init();
     runtime_config.num_core_threads = 0;  // defaults to number of cores
@@ -381,6 +492,8 @@ dnp3_runtime_t* init_runtime()
 
 }
 void destroy_runtime(dnp3_runtime_t *runtime) {
+    dnp3_runtime_set_shutdown_timeout(runtime, 1);
+    atomic_store(&is_shutting_down, true);
     dnp3_runtime_destroy(runtime);
 }
 
@@ -401,13 +514,6 @@ static void channel_destructor(PyObject *capsule) {
     }
 }
 
-static void runtime_destructor(PyObject *capsule) {
-    dnp3_runtime_t *runtime = PyCapsule_GetPointer(capsule, "dnp3_runtime_t");
-    if (runtime) {
-        dnp3_runtime_destroy(runtime);
-    }
-}
-
 static void config_destructor(PyObject *capsule) {
     dnp3_master_channel_config_t *config = PyCapsule_GetPointer(capsule, "dnp3_master_channel_config_t");
     if (config) {
@@ -415,11 +521,7 @@ static void config_destructor(PyObject *capsule) {
     }
 }
 
-
-
-
 // Python wrapper functions
-
 static PyObject* py_create_master_channel_config(PyObject *self, PyObject *args) {
     int master_address;
     if (!PyArg_ParseTuple(args, "i", &master_address)) {
@@ -462,7 +564,6 @@ static PyObject* py_create_tcp_channel(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-
     dnp3_master_channel_t *channel = create_tcp_channel(runtime, master_addr, endpoint_socket_addr, config);
     free(endpoint_socket_addr); // Free the duplicated string
     if (channel == NULL) {
@@ -477,7 +578,7 @@ static PyObject* py_init_runtime(PyObject *self, PyObject *Py_UNUSED(ignored)) {
     if (runtime == NULL) {
         Py_RETURN_NONE;
     }
-    return PyCapsule_New((void*)runtime, "dnp3_runtime_t", runtime_destructor);
+    return PyCapsule_New((void*)runtime, "dnp3_runtime_t", NULL);
 }
 
 

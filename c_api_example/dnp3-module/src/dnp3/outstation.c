@@ -1,4 +1,5 @@
 #include <Python.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -11,7 +12,6 @@
 
 // Forward declarations
 PyObject *DNP3Error;
-
 #define CAPSULE_NAME_OUTSTATION_CONFIG "dnp3_outstation_config"
 #define CAPSULE_NAME_ADDRESS_FILTER "dnp3_address_filter"
 #define CAPSULE_NAME_OUTSTATION "dnp3_outstation"
@@ -23,8 +23,75 @@ dnp3_timestamp_t now() {
     return dnp3_timestamp_synchronized_timestamp((uint64_t)time(NULL));
 }
 
-// TODO: implement proper logging interface
-void on_log_message(dnp3_log_level_t level, const char *msg, void *arg) { printf("%s", msg); }
+static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
+    printf("there\n");
+    /*static PyObject *logging_library = NULL;*/
+    /*static PyObject *logging_object = NULL;*/
+    /**/
+    /*PyGILState_STATE gstate;*/
+    /*gstate = PyGILState_Ensure();*/
+    /**/
+    /*if (logging_library == NULL || logging_object == NULL) {*/
+    /*    logging_library = PyImport_ImportModule("logging");*/
+    /*    if (logging_library == NULL) {*/
+    /*        PyErr_Print();*/
+    /*        PyGILState_Release(gstate);*/
+    /*        return;*/
+    /*    }*/
+    /**/
+    /*    logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "outstation");*/
+    /*    if (logging_object == NULL) {*/
+    /*        PyErr_Print();*/
+    /*        Py_DECREF(logging_library);*/
+    /*        PyGILState_Release(gstate);*/
+    /*        return;*/
+    /*    }*/
+    /*}*/
+    /**/
+    /*// Just to be 100% safe...*/
+    /*char *dup_msg = strdup(msg);*/
+    /*if (dup_msg == NULL) {*/
+    /*    fprintf(stderr, "Failed to allocate memory for log message\n");*/
+    /*    PyGILState_Release(gstate);*/
+    /*    return;*/
+    /*}*/
+    /*PyObject *logging_message = PyUnicode_FromString(dup_msg);*/
+    /*free(dup_msg);*/
+    /**/
+    /*if (logging_message == NULL) {*/
+    /*    PyErr_Print();*/
+    /*    PyGILState_Release(gstate);*/
+    /*    return;*/
+    /*}*/
+    /**/
+    /*const char *method_name;*/
+    /*switch (level) {*/
+    /*    // Python's logger doesn't have a trace level*/
+    /*    case DNP3_LOG_LEVEL_TRACE:*/
+    /*    case DNP3_LOG_LEVEL_DEBUG:*/
+    /*        method_name = "debug";*/
+    /*        break;*/
+    /*    case DNP3_LOG_LEVEL_INFO:*/
+    /*        method_name = "info";*/
+    /*        break;*/
+    /*    case DNP3_LOG_LEVEL_WARN:*/
+    /*        method_name = "warning";*/
+    /*        break;*/
+    /*    case DNP3_LOG_LEVEL_ERROR:*/
+    /*        method_name = "error";*/
+    /*        break;*/
+    /*    default:*/
+    /*        method_name = "info";*/
+    /*        break;*/
+    /*}*/
+    /**/
+    /*// Returns None, which is an immortal object since Python 3.12 (https://peps.python.org/pep-0683/)*/
+    /*// So no need to Py_DECREF the return value*/
+    /*PyObject_CallMethod(logging_object, method_name, "O", logging_message);*/
+    /*Py_DECREF(logging_message);*/
+    /**/
+    /*PyGILState_Release(gstate);*/
+}
 
 dnp3_logger_t get_logger() {
     return (dnp3_logger_t){
@@ -349,10 +416,20 @@ void octet_string_transaction(dnp3_database_t *db, void *context) {
     dnp3_octet_string_value_destroy(octet_string);
 }
 
-// TODO: Change to propert logging
-void on_connection_state_change(dnp3_connection_state_t state, void *ctx) { printf("Connection state change: %s\n", dnp3_connection_state_to_string(state)); }
+void on_connection_state_change(dnp3_connection_state_t state, void *ctx) { 
+    /*char* string;*/
+    /*if (asprintf(&string, "Connection state change: %s\n", dnp3_connection_state_to_string(state)) < 0) {*/
+    /*    on_log_message(DNP3_LOG_LEVEL_ERROR, "Unable to allocate memory for log message", NULL);*/
+    /*    return;*/
+    /*}*/
+    /**/
+    /*on_log_message(DNP3_LOG_LEVEL_INFO, string, NULL);*/
+    /*free(string);*/
+}
 
-void on_port_state_change(dnp3_port_state_t state, void *ctx) { printf("Port state change: %s\n", dnp3_port_state_to_string(state)); }
+void on_port_state_change(dnp3_port_state_t state, void *ctx) {
+    printf("Port state change: %s\n", dnp3_port_state_to_string(state)); 
+}
 
 dnp3_connection_state_listener_t get_connection_state_listener() {
     return (dnp3_connection_state_listener_t){
@@ -560,15 +637,8 @@ static PyObject* dnp3_init_database(PyObject *self, PyObject *args) {
 }
 
 dnp3_address_filter_t* create_address_filter(const char *address_filter) {
-    // Complains about directly creating filter_any as static
-    static dnp3_address_filter_t *filter_any;
-    static bool already;
-    if (!already) {
-        filter_any = dnp3_address_filter_any();
-        ++already;
-    }
-
     if (strcmp(address_filter, "any") == 0) {
+        dnp3_address_filter_t *filter_any = dnp3_address_filter_any();
         return filter_any;
     }
 

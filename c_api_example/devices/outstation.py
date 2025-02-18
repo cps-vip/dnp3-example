@@ -33,10 +33,6 @@ class Outstation(Device):
         self.state = DeviceState.INITIALIZED
 
     # Implement abstract method in Device base class
-    def destroy(self) -> None:
-        self.state = DeviceState.DESTROYED
-
-    # Implement abstract method in Device base class
     def activate(self) -> None:
         """
         Associates the outstation to the given TCP server. Also initializes the database.

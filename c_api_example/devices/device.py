@@ -6,7 +6,6 @@ class DeviceState(Enum):
     INITIALIZED = 0
     ACTIVE = 1
     INACTIVE = 2
-    DESTROYED = 3
 
 
 class Device(ABC):
@@ -24,13 +23,6 @@ class Device(ABC):
     def deactivate(self) -> None:
         """
         Sets the device state to inactive and stops communication
-        """
-        pass
-
-    @abstractmethod
-    def destroy(self) -> None:
-        """
-        Sets the device state to destroyed and frees up communication-related memory. Should work regardless of which state it is coming from.
         """
         pass
 
