@@ -8,8 +8,10 @@
 
 atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
 
-void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
-    printf("here");
+static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
+    printf("HEREEEEEEEEEEEEEEE\n");
+    printf("Msg: %s\n", msg);
+
     /*static PyObject *logging_library = NULL;*/
     /*static PyObject *logging_object = NULL;*/
     /**/
@@ -24,29 +26,18 @@ void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
     /*    logging_library = PyImport_ImportModule("logging");*/
     /*    if (logging_library == NULL) {*/
     /*        PyErr_Print();*/
-    /*        PyGILState_Release(gstate);*/
     /*        return;*/
     /*    }*/
     /**/
-    /*    logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "tcpserver");*/
+    /*    logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "outstation");*/
     /*    if (logging_object == NULL) {*/
     /*        PyErr_Print();*/
     /*        Py_DECREF(logging_library);*/
-    /*        PyGILState_Release(gstate);*/
     /*        return;*/
     /*    }*/
     /*}*/
     /**/
-    /*// Just to be 100% safe...*/
-    /*char *dup_msg = strdup(msg);*/
-    /*if (dup_msg == NULL) {*/
-    /*    fprintf(stderr, "Failed to allocate memory for log message\n");*/
-    /*    PyGILState_Release(gstate);*/
-    /*    return;*/
-    /*}*/
-    /*PyObject *logging_message = PyUnicode_FromString(dup_msg);*/
-    /*free(dup_msg);*/
-    /**/
+    /*PyObject *logging_message = PyUnicode_FromString(msg);*/
     /*if (logging_message == NULL) {*/
     /*    PyErr_Print();*/
     /*    PyGILState_Release(gstate);*/
@@ -78,11 +69,10 @@ void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
     /*// So no need to Py_DECREF the return value*/
     /*PyObject_CallMethod(logging_object, method_name, "O", logging_message);*/
     /*Py_DECREF(logging_message);*/
-    /**/
     /*PyGILState_Release(gstate);*/
 }
 
-dnp3_logger_t get_logger() {
+static dnp3_logger_t get_logger() {
     return (dnp3_logger_t){
         .on_message = &on_log_message,
         .on_destroy = NULL,
@@ -90,7 +80,7 @@ dnp3_logger_t get_logger() {
     };
 }
 
-dnp3_runtime_t* init_runtime() {
+static dnp3_runtime_t* init_runtime() {
     dnp3_runtime_t *runtime = NULL;
     // initialize logging with the default configuration
     dnp3_configure_logging(dnp3_logging_config_init(), get_logger());
@@ -100,7 +90,7 @@ dnp3_runtime_t* init_runtime() {
     runtime_config.num_core_threads = 0;  // defaults to number of cores
     dnp3_param_error_t err = dnp3_runtime_create(runtime_config, &runtime);
     if (err) {
-        printf("unable to create runtime: %s \n", dnp3_param_error_to_string(err));
+        fprintf(stderr, "Unable to create runtime: %s \n", dnp3_param_error_to_string(err));
         return NULL;
     }
     return runtime;
@@ -110,7 +100,7 @@ dnp3_outstation_server_t* init_server(dnp3_runtime_t *runtime, const char *socke
     dnp3_outstation_server_t *server = NULL;
     dnp3_param_error_t err = dnp3_outstation_server_create_tcp_server(runtime, DNP3_LINK_ERROR_MODE_CLOSE, socket_addr, &server);
     if (err) {
-        printf("unable to create TCP server: %s \n", dnp3_param_error_to_string(err));
+        fprintf(stderr, "Unable to create TCP server: %s \n", dnp3_param_error_to_string(err));
         return NULL;
     }
     return server;
@@ -119,7 +109,7 @@ dnp3_outstation_server_t* init_server(dnp3_runtime_t *runtime, const char *socke
 int start_server(dnp3_outstation_server_t *server) {
     dnp3_param_error_t err = dnp3_outstation_server_bind(server);
     if (err) {
-        printf("unable to bind server: %s \n", dnp3_param_error_to_string(err));
+        fprintf(stderr, "Unable to bind server: %s \n", dnp3_param_error_to_string(err));
         return -1;
     }
     return 0;
@@ -148,6 +138,11 @@ static PyObject* dnp3_wrapper_init_runtime(PyObject *self, PyObject *Py_UNUSED(a
         return NULL;
     }
     return PyCapsule_New(runtime, "dnp3_runtime_t", NULL);
+}
+
+static PyObject* log_stuff(PyObject *self, PyObject *Py_UNUSED(args)) {
+    on_log_message(DNP3_LOG_LEVEL_INFO, "hello world", NULL);
+    Py_RETURN_NONE;
 }
 
 static PyObject* dnp3_wrapper_init_server(PyObject *self, PyObject *args) {
@@ -212,6 +207,7 @@ static PyObject* dnp3_wrapper_destroy_runtime(PyObject *self, PyObject *args) {
 // Method definitions
 static PyMethodDef methods[] = {
     {"init_runtime", dnp3_wrapper_init_runtime, METH_NOARGS, "Initializes the DNP3 runtime."},
+    {"log_stuff", log_stuff, METH_NOARGS, "Initializes the DNP3 runtime."},
     {"init_server", dnp3_wrapper_init_server, METH_VARARGS, "Initializes the DNP3 server."},
     {"start_server", dnp3_wrapper_start_server, METH_VARARGS, "Starts the DNP3 server."},
     {"destroy_runtime", dnp3_wrapper_destroy_runtime, METH_VARARGS, "Destroy runtime(runtime_capsule)"},

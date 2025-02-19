@@ -6,6 +6,7 @@ class DeviceState(Enum):
     INITIALIZED = 0
     ACTIVE = 1
     INACTIVE = 2
+    DESTROYED = 3
 
 
 class Device(ABC):
@@ -15,14 +16,23 @@ class Device(ABC):
     @abstractmethod
     def activate(self) -> None:
         """
-        Sets the device state to active and starts or restarts communication, depending on if coming from inactive or initialized state
+        Sets the device state to active and starts or restarts communication, depending on if coming from inactive or initialized state.
         """
         pass
 
     @abstractmethod
     def deactivate(self) -> None:
         """
-        Sets the device state to inactive and stops communication
+        Sets the device state to inactive and stops communication.
+        Must be called form active state.
+        """
+        pass
+
+    @abstractmethod
+    def destroy(self) -> None:
+        """
+        Sets the device state to destroyed and cleans up device resources.
+        Must be called from inactive state.
         """
         pass
 

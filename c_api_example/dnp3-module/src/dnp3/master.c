@@ -9,35 +9,21 @@
 #include <stdatomic.h>
 #include <pthread.h>
 
-#include "ceval.h"
-#include "critical_section.h"
 #include "dnp3.h"
 
-static pthread_mutex_t pyContextLock = PTHREAD_MUTEX_INITIALIZER;
 static atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
 
-    /*pthread_mutex_lock(&pyContextLock);                            \*/
-    /*pthread_mutex_unlock(&pyContextLock);                          \*/
-    /*printf("Trying to acquire from thread %lu\n", (unsigned long)pthread_self()); \*/
-    /*printf("Acquired from thread %lu\n", (unsigned long)pthread_self());   \*/
-    /*printf("Released mutex %lu\n", (unsigned long)pthread_self());   \*/
-#define PY_SAFE_CONTEXT(expr)                                      \
-{                                                                  \
-    PyGILState_STATE gstate; \
-    printf("Trying to grab... %lu\n", (unsigned long)pthread_self());   \
-    gstate = PyGILState_Ensure();                                  \
-    printf("Ensure gstate %lu\n", (unsigned long)pthread_self());   \
-    expr;                                                          \
-    PyGILState_Release(gstate);                                    \
-    printf("Released gstate %lu\n", (unsigned long)pthread_self());   \
-}
-
-static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
+static void log_message(dnp3_log_level_t level, const char *msg) {
     static PyObject *logging_library = NULL;
     static PyObject *logging_object = NULL;
+
     if (atomic_load(&is_shutting_down)) {
         return;
     }
+
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
     if (logging_library == NULL || logging_object == NULL) {
         logging_library = PyImport_ImportModule("logging");
         if (logging_library == NULL) {
@@ -53,32 +39,12 @@ static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
         }
     }
 
-    pthread_mutex_lock(&pyContextLock);                            \
-    printf("Trying to grab... %ld\n", syscall(SYS_gettid));   \
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-    printf("Ensured gstate %ld\n", syscall(SYS_gettid));   \
-
-
-
-    // Just to be 100% safe...
-    /*char *dup_msg = strdup(msg);*/
-    /*if (dup_msg == NULL) {*/
-    /*    fprintf(stderr, "Failed to allocate memory for log message\n");*/
-    /*    printf("Releasing gstate %ld\n", syscall(SYS_gettid));   \*/
-    /*    PyGILState_Release(gstate);*/
-    /*    return;*/
-        /*goto end;*/
-    /*}*/
-    /*PyObject *logging_message = PyUnicode_FromString(msg);*/
-    /*free(dup_msg);*/
-
-    /*if (logging_message == NULL) {*/
-    /*    PyErr_Print();*/
-    /*    printf("Releasing gstate %ld\n", syscall(SYS_gettid));   \*/
-    /*    PyGILState_Release(gstate);*/
-    /*    return;*/
-    /*}*/
+    PyObject *logging_message = PyUnicode_FromString(msg);
+    if (logging_message == NULL) {
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return;
+    }
 
     const char *method_name;
     switch (level) {
@@ -103,15 +69,13 @@ static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
 
     // Returns None, which is an immortal object since Python 3.12 (https://peps.python.org/pep-0683/)
     // So no need to Py_DECREF the return value
-
-    /*PyObject_CallMethod(logging_object, method_name, "O", logging_message);*/
-    /*Py_DECREF(logging_message);*/
+    PyObject_CallMethod(logging_object, method_name, "O", logging_message);
+    Py_DECREF(logging_message);
     PyGILState_Release(gstate);
+}
 
-    pthread_mutex_unlock(&pyContextLock);                          \
-    printf("Releasing gstate %ld\n", syscall(SYS_gettid));
-    /*end:*/
-    /*);*/
+static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
+    log_message(level, msg);
 }
 
 dnp3_logger_t get_logger() {
@@ -128,16 +92,7 @@ dnp3_logger_t get_logger() {
 
 // ClientState listener callback
 void client_state_on_change(dnp3_client_state_t state, void *arg) { 
-    /*printf("ClientState = %s\n", dnp3_client_state_to_string(state)); */
-
-    /*char* string;*/
-    /*if (asprintf(&string, "ClientState = %s\n", dnp3_client_state_to_string(state)) < 0) {*/
-    /*    on_log_message(DNP3_LOG_LEVEL_ERROR, "Unable to allocate memory for log message", NULL);*/
-    /*    return;*/
-    /*}*/
-    /**/
-    /*on_log_message(DNP3_LOG_LEVEL_INFO, string, NULL);*/
-    /*free(string);*/
+    // No logging here, see https://github.com/cps-vip/cps-cosimulation-env/wiki/Kaden-McCartney's-Notebook#outstanding-issues
 }
 
 dnp3_client_state_listener_t get_client_state_listener()
@@ -162,12 +117,19 @@ dnp3_port_state_listener_t get_port_state_listener()
 }
 
 // ANCHOR: read_handler
-void begin_fragment(dnp3_read_type_t read_type, dnp3_response_header_t header, void *arg)
-{
-    printf("Beginning fragment (broadcast: %u)\n", header.iin.iin1.broadcast);
+void begin_fragment(dnp3_read_type_t read_type, dnp3_response_header_t header, void *arg) {
+    char* string;
+    if (asprintf(&string, "Beginning fragment (broadcast: %u)\n", header.iin.iin1.broadcast) < 0) {
+        fprintf(stderr, "Failed to allocate memory for log message\n");
+        return;
+    }
+    log_message(DNP3_LOG_LEVEL_INFO, string);
+    free(string);
 }
 
-void end_fragment(dnp3_read_type_t read_type, dnp3_response_header_t header, void *arg) { printf("End fragment\n"); }
+void end_fragment(dnp3_read_type_t read_type, dnp3_response_header_t header, void *arg) { 
+    log_message(DNP3_LOG_LEVEL_INFO, "End fragment\n");
+}
 
 void handle_binary_input(dnp3_header_info_t info, dnp3_binary_input_iterator_t *it, void *arg)
 {
@@ -474,11 +436,21 @@ dnp3_master_channel_t* create_tcp_channel(dnp3_runtime_t *runtime, int master_ad
 }
 
 // Initialises logger and runtime
-dnp3_runtime_t* init_runtime()
+static dnp3_runtime_t* init_runtime()
 {
     dnp3_runtime_t *runtime = NULL;
-    // initialize logging with the default configuration
-    dnp3_configure_logging(dnp3_logging_config_init(), get_logger());
+
+    // Hopefully very minimal overhead to just keeping at INFO here, 
+    // and letting the Python logger filter out anything it needs to
+    dnp3_logging_config_t logging_config = {
+        DNP3_LOG_LEVEL_INFO,  
+        DNP3_LOG_OUTPUT_FORMAT_TEXT,
+        DNP3_TIME_FORMAT_NONE,  // let Python logger handle
+        false,  // don't print log level, let Python logger handle
+        false
+    };
+
+    dnp3_configure_logging(logging_config, get_logger());
 
     // Create runtime
     dnp3_runtime_config_t runtime_config = dnp3_runtime_config_init();
@@ -491,6 +463,7 @@ dnp3_runtime_t* init_runtime()
     return runtime;
 
 }
+
 void destroy_runtime(dnp3_runtime_t *runtime) {
     dnp3_runtime_set_shutdown_timeout(runtime, 1);
     atomic_store(&is_shutting_down, true);

@@ -58,3 +58,11 @@ class Master(Device):
             master.disable_master_channel(channel)
         self.state = DeviceState.INACTIVE
 
+    # Implement abstract method in Device base class
+    def destroy(self) -> None:
+        if self.state != DeviceState.INACTIVE:
+            raise Exception("Trying to destroy master from bad state")
+
+        master.destroy_runtime(self._runtime)
+        self.state = DeviceState.DESTROYED
+

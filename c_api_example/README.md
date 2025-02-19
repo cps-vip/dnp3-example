@@ -5,14 +5,6 @@ This method gives the most functionality and flexibility, but also the most comp
 ```bash
 ./install_module.sh
 
-# Open another terminal in this directory
-
-# In one, run:
 source venv/bin/activate
-./run_master.py
-
-# In the other, run:
-source venv/bin/activate
-./run_outstation.py
+./run.py
 ```
-

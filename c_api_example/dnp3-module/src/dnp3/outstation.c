@@ -8,7 +8,6 @@
 #include <time.h>
 
 #include "dnp3.h"
-#include "pycapsule.h"
 
 // Forward declarations
 PyObject *DNP3Error;
@@ -23,83 +22,6 @@ dnp3_timestamp_t now() {
     return dnp3_timestamp_synchronized_timestamp((uint64_t)time(NULL));
 }
 
-static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
-    printf("there\n");
-    /*static PyObject *logging_library = NULL;*/
-    /*static PyObject *logging_object = NULL;*/
-    /**/
-    /*PyGILState_STATE gstate;*/
-    /*gstate = PyGILState_Ensure();*/
-    /**/
-    /*if (logging_library == NULL || logging_object == NULL) {*/
-    /*    logging_library = PyImport_ImportModule("logging");*/
-    /*    if (logging_library == NULL) {*/
-    /*        PyErr_Print();*/
-    /*        PyGILState_Release(gstate);*/
-    /*        return;*/
-    /*    }*/
-    /**/
-    /*    logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "outstation");*/
-    /*    if (logging_object == NULL) {*/
-    /*        PyErr_Print();*/
-    /*        Py_DECREF(logging_library);*/
-    /*        PyGILState_Release(gstate);*/
-    /*        return;*/
-    /*    }*/
-    /*}*/
-    /**/
-    /*// Just to be 100% safe...*/
-    /*char *dup_msg = strdup(msg);*/
-    /*if (dup_msg == NULL) {*/
-    /*    fprintf(stderr, "Failed to allocate memory for log message\n");*/
-    /*    PyGILState_Release(gstate);*/
-    /*    return;*/
-    /*}*/
-    /*PyObject *logging_message = PyUnicode_FromString(dup_msg);*/
-    /*free(dup_msg);*/
-    /**/
-    /*if (logging_message == NULL) {*/
-    /*    PyErr_Print();*/
-    /*    PyGILState_Release(gstate);*/
-    /*    return;*/
-    /*}*/
-    /**/
-    /*const char *method_name;*/
-    /*switch (level) {*/
-    /*    // Python's logger doesn't have a trace level*/
-    /*    case DNP3_LOG_LEVEL_TRACE:*/
-    /*    case DNP3_LOG_LEVEL_DEBUG:*/
-    /*        method_name = "debug";*/
-    /*        break;*/
-    /*    case DNP3_LOG_LEVEL_INFO:*/
-    /*        method_name = "info";*/
-    /*        break;*/
-    /*    case DNP3_LOG_LEVEL_WARN:*/
-    /*        method_name = "warning";*/
-    /*        break;*/
-    /*    case DNP3_LOG_LEVEL_ERROR:*/
-    /*        method_name = "error";*/
-    /*        break;*/
-    /*    default:*/
-    /*        method_name = "info";*/
-    /*        break;*/
-    /*}*/
-    /**/
-    /*// Returns None, which is an immortal object since Python 3.12 (https://peps.python.org/pep-0683/)*/
-    /*// So no need to Py_DECREF the return value*/
-    /*PyObject_CallMethod(logging_object, method_name, "O", logging_message);*/
-    /*Py_DECREF(logging_message);*/
-    /**/
-    /*PyGILState_Release(gstate);*/
-}
-
-dnp3_logger_t get_logger() {
-    return (dnp3_logger_t){
-        .on_message = &on_log_message,
-        .on_destroy = NULL,
-        .ctx = NULL,
-    };
-}
 
 // OutstationApplication interface
 uint16_t get_processing_delay_ms(void *context) { return 0; }
@@ -645,7 +567,7 @@ dnp3_address_filter_t* create_address_filter(const char *address_filter) {
     dnp3_address_filter_t *filter = NULL;
     dnp3_param_error_t err = dnp3_address_filter_create(address_filter, &filter);
     if (err) {
-        printf("Invalid address filter. Try \"any\" or a wildcard IP address. Err: %s \n", dnp3_param_error_to_string(err));
+        fprintf(stderr, "Invalid address filter. Try \"any\" or a wildcard IP address. Err: %s \n", dnp3_param_error_to_string(err));
         return NULL;
     }
     return filter;
@@ -687,7 +609,7 @@ dnp3_outstation_t* add_outstation(dnp3_outstation_server_t *server, dnp3_address
     );
 
     if (err) {
-        printf("Error: %s\n", dnp3_param_error_to_string(err));
+        fprintf(stderr, "Error: %s\n", dnp3_param_error_to_string(err));
         return NULL;
     }
     return outstation;

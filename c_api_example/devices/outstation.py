@@ -11,6 +11,12 @@ class Outstation(Device):
         def start(self):
             tcpserver.start_server(self._server)
 
+        def log_stuff(self):
+            tcpserver.log_stuff()
+
+        def destroy(self):
+            tcpserver.destroy_runtime(self._runtime)
+
     def __init__(self, name: str, outstation_addr: int, master_addr: int, socket_addr: str):
         # Make sure to initialize the Device base class
         super().__init__(name)
@@ -65,4 +71,11 @@ class Outstation(Device):
             raise Exception("Outstation was never initialized. Did you accidentally set the device state manually?")
         outstation.disable_outstation(self._outstation)
         self.state = DeviceState.INACTIVE
+
+    # Implement abstract method in Device base class
+    def destroy(self) -> None:
+        if self.state != DeviceState.INACTIVE:
+            raise Exception("Trying to destroy master from bad state")
+        self._tcpserver.destroy()
+        self.state = DeviceState.DESTROYED
 
