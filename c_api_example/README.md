@@ -6,5 +6,10 @@ This method gives the most functionality and flexibility, but also the most comp
 ./install_module.sh
 
 source venv/bin/activate
-./run.py
+
+# run.py is currently broken, so use run_fork.py for now
+python run_fork.py
+
+# To test everything worked, look at simulation.log
+cat simulation.log
 ```
