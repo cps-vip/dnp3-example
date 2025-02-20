@@ -9,67 +9,64 @@
 atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
 
 static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
-    printf("HEREEEEEEEEEEEEEEE\n");
-    printf("Msg: %s\n", msg);
+    static PyObject *logging_library = NULL;
+    static PyObject *logging_object = NULL;
 
-    /*static PyObject *logging_library = NULL;*/
-    /*static PyObject *logging_object = NULL;*/
-    /**/
-    /*if (atomic_load(&is_shutting_down)) {*/
-    /*    return;*/
-    /*}*/
-    /**/
-    /*PyGILState_STATE gstate;*/
-    /*gstate = PyGILState_Ensure();*/
-    /**/
-    /*if (logging_library == NULL || logging_object == NULL) {*/
-    /*    logging_library = PyImport_ImportModule("logging");*/
-    /*    if (logging_library == NULL) {*/
-    /*        PyErr_Print();*/
-    /*        return;*/
-    /*    }*/
-    /**/
-    /*    logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "outstation");*/
-    /*    if (logging_object == NULL) {*/
-    /*        PyErr_Print();*/
-    /*        Py_DECREF(logging_library);*/
-    /*        return;*/
-    /*    }*/
-    /*}*/
-    /**/
-    /*PyObject *logging_message = PyUnicode_FromString(msg);*/
-    /*if (logging_message == NULL) {*/
-    /*    PyErr_Print();*/
-    /*    PyGILState_Release(gstate);*/
-    /*    return;*/
-    /*}*/
-    /**/
-    /*const char *method_name;*/
-    /*switch (level) {*/
-    /*    // Python's logger doesn't have a trace level*/
-    /*    case DNP3_LOG_LEVEL_TRACE:*/
-    /*    case DNP3_LOG_LEVEL_DEBUG:*/
-    /*        method_name = "debug";*/
-    /*        break;*/
-    /*    case DNP3_LOG_LEVEL_INFO:*/
-    /*        method_name = "info";*/
-    /*        break;*/
-    /*    case DNP3_LOG_LEVEL_WARN:*/
-    /*        method_name = "warning";*/
-    /*        break;*/
-    /*    case DNP3_LOG_LEVEL_ERROR:*/
-    /*        method_name = "error";*/
-    /*        break;*/
-    /*    default:*/
-    /*        method_name = "info";*/
-    /*        break;*/
-    /*}*/
-    /**/
-    /*// Returns None, which is an immortal object since Python 3.12 (https://peps.python.org/pep-0683/)*/
-    /*// So no need to Py_DECREF the return value*/
-    /*PyObject_CallMethod(logging_object, method_name, "O", logging_message);*/
-    /*Py_DECREF(logging_message);*/
-    /*PyGILState_Release(gstate);*/
+    if (atomic_load(&is_shutting_down)) {
+        return;
+    }
+
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    if (logging_library == NULL || logging_object == NULL) {
+        logging_library = PyImport_ImportModule("logging");
+        if (logging_library == NULL) {
+            PyErr_Print();
+            return;
+        }
+
+        logging_object = PyObject_CallMethod(logging_library, "getLogger", "s", "outstation");
+        if (logging_object == NULL) {
+            PyErr_Print();
+            Py_DECREF(logging_library);
+            return;
+        }
+    }
+
+    PyObject *logging_message = PyUnicode_FromString(msg);
+    if (logging_message == NULL) {
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        return;
+    }
+
+    const char *method_name;
+    switch (level) {
+        // Python's logger doesn't have a trace level
+        case DNP3_LOG_LEVEL_TRACE:
+        case DNP3_LOG_LEVEL_DEBUG:
+            method_name = "debug";
+            break;
+        case DNP3_LOG_LEVEL_INFO:
+            method_name = "info";
+            break;
+        case DNP3_LOG_LEVEL_WARN:
+            method_name = "warning";
+            break;
+        case DNP3_LOG_LEVEL_ERROR:
+            method_name = "error";
+            break;
+        default:
+            method_name = "info";
+            break;
+    }
+
+    // Returns None, which is an immortal object since Python 3.12 (https://peps.python.org/pep-0683/)
+    // So no need to Py_DECREF the return value
+    PyObject_CallMethod(logging_object, method_name, "O", logging_message);
+    Py_DECREF(logging_message);
+    PyGILState_Release(gstate);
 }
 
 static dnp3_logger_t get_logger() {
