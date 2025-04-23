@@ -7,8 +7,7 @@ This method gives the most functionality and flexibility, but also the most comp
 
 source venv/bin/activate
 
-# run.py is currently broken, so use run_fork.py for now
-python run_fork.py
+python run.py
 
 # To test everything worked, look at simulation.log
 cat simulation.log

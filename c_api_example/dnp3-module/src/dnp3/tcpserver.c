@@ -137,11 +137,6 @@ static PyObject* dnp3_wrapper_init_runtime(PyObject *self, PyObject *Py_UNUSED(a
     return PyCapsule_New(runtime, "dnp3_runtime_t", NULL);
 }
 
-static PyObject* log_stuff(PyObject *self, PyObject *Py_UNUSED(args)) {
-    on_log_message(DNP3_LOG_LEVEL_INFO, "hello world", NULL);
-    Py_RETURN_NONE;
-}
-
 static PyObject* dnp3_wrapper_init_server(PyObject *self, PyObject *args) {
     PyObject *runtime_capsule;
     const char *socket_addr;
@@ -204,7 +199,6 @@ static PyObject* dnp3_wrapper_destroy_runtime(PyObject *self, PyObject *args) {
 // Method definitions
 static PyMethodDef methods[] = {
     {"init_runtime", dnp3_wrapper_init_runtime, METH_NOARGS, "Initializes the DNP3 runtime."},
-    {"log_stuff", log_stuff, METH_NOARGS, "Initializes the DNP3 runtime."},
     {"init_server", dnp3_wrapper_init_server, METH_VARARGS, "Initializes the DNP3 server."},
     {"start_server", dnp3_wrapper_start_server, METH_VARARGS, "Starts the DNP3 server."},
     {"destroy_runtime", dnp3_wrapper_destroy_runtime, METH_VARARGS, "Destroy runtime(runtime_capsule)"},
