@@ -276,10 +276,14 @@ typedef struct database_points_t {
 } database_points_t;
 
 void binary_transaction(dnp3_database_t *db, void *context) {
-    ((database_points_t *)context)->binaryValue = !((database_points_t *)context)->binaryValue;
+    // ((database_points_t *)context)->binaryValue = !((database_points_t *)context)->binaryValue;
+
+    dnp3_binary_input_t *my_input;
+    dnp3_database_get_binary_input(db, 7, my_input);
+    bool current_value = my_input->value;
 
     dnp3_binary_input_t value =
-        dnp3_binary_input_init(7, ((database_points_t *)context)->binaryValue, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
+        dnp3_binary_input_init(7, !current_value, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
     dnp3_database_update_binary_input(db, value, dnp3_update_options_detect_event());
 }
 
@@ -665,6 +669,7 @@ static PyObject* dnp3_enable_outstation(PyObject *self, PyObject *args) {
     }
 
     dnp3_outstation_enable(outstation);
+    run_outstation(outstation);
     Py_RETURN_NONE;
 }
 

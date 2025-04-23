@@ -10,9 +10,11 @@ class Master(Device):
 
         self._runtime = master.init_runtime()
         self._config = master.create_master_channel_config(master_dnp3_addr)
+        master.add_binary_input_callback(self.handle_outstation_binary_input)
 
         self._channels = {}
         self.state = DeviceState.INITIALIZED
+        self.num_times_called = 0
 
     def create_channel(self, outstation_dnp3_addr: int, outstation_socket_addr: str):
         # Typically one association per channel:
@@ -54,6 +56,7 @@ class Master(Device):
         if self.state != DeviceState.ACTIVE:
             raise Exception("Trying to deactivate master from bad state")
 
+        print(f'Number of times binary input callback called: {self.num_times_called}')
         for channel, _ in self._channels.values():
             master.disable_master_channel(channel)
         self.state = DeviceState.INACTIVE
@@ -65,4 +68,8 @@ class Master(Device):
 
         master.destroy_runtime(self._runtime)
         self.state = DeviceState.DESTROYED
+
+    def handle_outstation_binary_input(self):
+        print('Got a binary input from an outstation!', flush=True)
+        self.num_times_called += 1
 
