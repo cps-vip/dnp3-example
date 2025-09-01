@@ -6,7 +6,7 @@
 #include <stdatomic.h>
 #include "dnp3.h"
 
-atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
+atomic_bool is_shutting_down = false;
 
 static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
     static PyObject *logging_library = NULL;

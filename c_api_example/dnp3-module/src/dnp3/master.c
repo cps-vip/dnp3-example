@@ -11,7 +11,7 @@
 
 #include "dnp3.h"
 
-static atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
+static atomic_bool is_shutting_down = false;
 
 static void log_message(dnp3_log_level_t level, const char *msg) {
     static PyObject *logging_library = NULL;

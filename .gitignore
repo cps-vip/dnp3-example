@@ -1,4 +1,6 @@
-c_api_example/dnp3-module/src/dnp3/include/
+c_api_example/dnp3-module/src/dnp3/*.h
+c_api_example/dnp3-module/src/dnp3/*.so
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
