@@ -718,6 +718,8 @@ PyMODINIT_FUNC PyInit_outstation(void)
     if (m == NULL)
         return NULL;
 
+    // PyUnstable_Module_SetGIL(mod, Py_MOD_GIL_NOT_USED);
+
     DNP3Error = PyErr_NewException("dnp3_extensions.DNP3Error", PyExc_RuntimeError, NULL);
     Py_XINCREF(DNP3Error);
     if (PyModule_AddObject(m, "DNP3Error", DNP3Error) < 0) {

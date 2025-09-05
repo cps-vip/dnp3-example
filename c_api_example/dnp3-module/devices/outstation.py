@@ -11,9 +11,6 @@ class Outstation(Device):
         def start(self):
             tcpserver.start_server(self._server)
 
-        def log_stuff(self):
-            tcpserver.log_stuff()
-
         def destroy(self):
             tcpserver.destroy_runtime(self._runtime)
 

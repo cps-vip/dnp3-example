@@ -6,7 +6,7 @@
 #include <stdatomic.h>
 #include "dnp3.h"
 
-atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
+atomic_bool is_shutting_down = false;
 
 static void on_log_message(dnp3_log_level_t level, const char *msg, void *ctx) {
     static PyObject *logging_library = NULL;
@@ -80,7 +80,18 @@ static dnp3_logger_t get_logger() {
 static dnp3_runtime_t* init_runtime() {
     dnp3_runtime_t *runtime = NULL;
     // initialize logging with the default configuration
-    dnp3_configure_logging(dnp3_logging_config_init(), get_logger());
+    dnp3_logging_config_t logging_config = {
+        DNP3_LOG_LEVEL_WARN,
+        DNP3_LOG_OUTPUT_FORMAT_TEXT,
+        DNP3_TIME_FORMAT_NONE,
+        false,
+        false
+    };
+    dnp3_param_error_t err_log = dnp3_configure_logging(logging_config, get_logger());
+    if (err_log) {
+        printf("Error configuring logging: %s\n", dnp3_param_error_to_string(err_log));
+        return NULL;
+    }
 
     // Create runtime
     dnp3_runtime_config_t runtime_config = dnp3_runtime_config_init();

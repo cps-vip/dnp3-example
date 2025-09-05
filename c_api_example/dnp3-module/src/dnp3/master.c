@@ -11,10 +11,24 @@
 
 #include "dnp3.h"
 
-PyObject *global_binary_input_callback;
+PyObject *global_self = NULL;
+PyObject *global_binary_input_callback = NULL;
+static atomic_bool is_shutting_down = false;
 
+void internal_binary_input_callback(dnp3_header_info_t info, dnp3_binary_input_iterator_t *it, void *arg) {
+    printf("Ptr is: %p\n", global_binary_input_callback);
+    if (atomic_load(&is_shutting_down)) {
+        return;
+    }
+    printf("Calling callback\n");
 
-static atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
+    Py_BEGIN_CRITICAL_SECTION(global_self);
+    printf("Calling callback2\n");
+    PyObject_CallNoArgs(global_binary_input_callback);
+    Py_END_CRITICAL_SECTION();
+
+    printf("Done calling callback\n");
+}
 
 static void log_message(dnp3_log_level_t level, const char *msg) {
     static PyObject *logging_library = NULL;
@@ -245,21 +259,22 @@ void handle_string_attr(dnp3_header_info_t info, dnp3_string_attr_t attr, uint8_
 }
 // ANCHOR_END: read_handler
 
-void internal_binary_input_callback(dnp3_header_info_t info, dnp3_binary_input_iterator_t *it, void *arg) {
-    printf("Ptr is: %p\n", global_binary_input_callback);
-    if (atomic_load(&is_shutting_down)) {
-        return;
-    }
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-    printf("Acquired GIL\n");
-
-    PyObject_CallNoArgs(global_binary_input_callback);
-    printf("Called callback\n");
-
-    PyGILState_Release(gstate);
-    printf("Released GIL\n\n");
-}
+// This is the version of internal_binary_input_callback that I tried with GIL enabled
+// void internal_binary_input_callback(dnp3_header_info_t info, dnp3_binary_input_iterator_t *it, void *arg) {
+//     printf("Ptr is: %p\n", global_binary_input_callback);
+//     if (atomic_load(&is_shutting_down)) {
+//         return;
+//     }
+//     PyGILState_STATE gstate;
+//     gstate = PyGILState_Ensure();
+//     printf("Acquired GIL\n");
+// 
+//     PyObject_CallNoArgs(global_binary_input_callback);
+//     printf("Called callback\n");
+// 
+//     PyGILState_Release(gstate);
+//     printf("Released GIL\n\n");
+// }
 
 dnp3_read_handler_t get_read_handler()
 {
@@ -410,6 +425,8 @@ int add_association(dnp3_master_channel_t *channel, int outstation_addr, dnp3_as
             association_id
         );
 
+    PyObject_CallNoArgs(global_binary_input_callback);
+
     if (err) {
         printf("unable to add association: %s \n", dnp3_param_error_to_string(err));
         return -1;
@@ -465,7 +482,7 @@ static dnp3_runtime_t* init_runtime()
     // Hopefully very minimal overhead to just keeping at INFO here, 
     // and letting the Python logger filter out anything it needs to
     dnp3_logging_config_t logging_config = {
-        DNP3_LOG_LEVEL_INFO,  
+        DNP3_LOG_LEVEL_WARN,
         DNP3_LOG_OUTPUT_FORMAT_TEXT,
         DNP3_TIME_FORMAT_NONE,  // let Python logger handle
         false,  // don't print log level, let Python logger handle
@@ -474,7 +491,7 @@ static dnp3_runtime_t* init_runtime()
 
     dnp3_param_error_t err_log = dnp3_configure_logging(logging_config, get_logger());
     if (err_log) {
-        printf("ERROR CONFIGURING LOGGING: %s \n", dnp3_param_error_to_string(err_log));
+        printf("Error configuring logging: %s\n", dnp3_param_error_to_string(err_log));
         return NULL;
     }
 
@@ -691,6 +708,9 @@ static PyObject* add_binary_input_callback(PyObject *self, PyObject *args) {
         printf("Bad argument\n");
         return 0;
     }
+
+    global_self = self;
+
     // determine whether the object is in fact callable
     if (!PyCallable_Check(global_binary_input_callback)) {
         printf("Bad callback\n");
@@ -698,7 +718,6 @@ static PyObject* add_binary_input_callback(PyObject *self, PyObject *args) {
     }
     Py_RETURN_NONE;
 }
-
 
 // Method definitions for the module
 static PyMethodDef Dnp3Methods[] = {
