@@ -1,8 +1,21 @@
 from .device import Device, DeviceState
 
 from dnp3 import tcpserver, outstation
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Outstation(Device):
+
+    def binary2_input_transaction(self):
+        if self._outstation is None:
+            raise Exception("Outstation was never initialized. Did you accidentally set the device state manually?")
+        logger.info("ajfdddddddddddddddd")
+        outstation.binary_input_transaction(self._outstation)
+        logger.info("AFTERAFTER")
+
+
+
     class TCPServer:
         def __init__(self, socket_addr: str):
             self._runtime = tcpserver.init_runtime()
@@ -78,4 +91,6 @@ class Outstation(Device):
             raise Exception("Trying to destroy master from bad state")
         self._tcpserver.destroy()
         self.state = DeviceState.DESTROYED
+
+    
 

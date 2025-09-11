@@ -21,7 +21,7 @@ if __name__ == '__main__':
                                  master_dnp3_addr,
                                  outstation1_addr[1])
         outstation1.activate()
-        outstation1._tcpserver.log_stuff()
+        outstation1._tcpserver.log_stuff() 
         logger.info("Activated outstation 1")
 
         outstation2 = Outstation("Outstation 2", 

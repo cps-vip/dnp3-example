@@ -16,6 +16,10 @@ PyObject *DNP3Error;
 #define CAPSULE_NAME_OUTSTATION "dnp3_outstation"
 #define CAPSULE_NAME_OUTSTATION_SERVER "dnp3_outstation_server"
 
+#define CAPSULE_NAME_DATABASE "dnp3_database"
+#define CAPSULE_NAME_DATABASE_POINTS "dnp3_database_points"
+
+
 
 // TODO: integrate with HELICS time
 dnp3_timestamp_t now() {
@@ -276,12 +280,72 @@ typedef struct database_points_t {
 } database_points_t;
 
 void binary_transaction(dnp3_database_t *db, void *context) {
-    ((database_points_t *)context)->binaryValue = !((database_points_t *)context)->binaryValue;
+//   ((database_points_t *)context)->binaryValue = !((database_points_t *)context)->binaryValue;
+
+    dnp3_binary_input_t *my_input;
+    dnp3_database_get_binary_input(db, 7, my_input);
+    bool current_value = my_input->value;
 
     dnp3_binary_input_t value =
-        dnp3_binary_input_init(7, ((database_points_t *)context)->binaryValue, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
+        dnp3_binary_input_init(7, !current_value, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
     dnp3_database_update_binary_input(db, value, dnp3_update_options_detect_event());
 }
+
+static PyObject* dnp3_binary_input_transaction(PyObject *self, PyObject *args) {
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+    //create struct and call 
+printf("the first\n");
+
+    PyObject *outstation_capsule;
+    printf("the second\n");
+    if (!PyArg_ParseTuple(args, "O", &outstation_capsule)) {
+        return NULL;
+    }
+    printf("the third\n");
+
+    dnp3_outstation_t *outstation = PyCapsule_GetPointer(outstation_capsule, CAPSULE_NAME_OUTSTATION);
+    printf("the fourth\n");
+    if (outstation == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid outstation capsule");
+        return NULL;
+    }
+    printf("the fifth\n");
+    dnp3_database_transaction_t transaction = {
+                .execute = &binary_transaction,
+                .on_destroy = NULL,
+                .ctx = NULL,
+            };
+            printf("the sixth\n");
+    dnp3_outstation_transaction(outstation, transaction);
+    printf("the seventh\n");
+    PyGILState_Release(gstate);
+    Py_RETURN_NONE;
+
+
+}
+
+// static PyObject* dnp3_binary_output_status_transaction(PyObject *self, PyObject *args) {
+//     PyObject *outstation_capsule;
+//     if (!PyArg_ParseTuple(args, "O", &outstation_capsule)) {
+//         return NULL;
+//     }
+
+//     dnp3_outstation_t *outstation = PyCapsule_GetPointer(outstation_capsule, CAPSULE_NAME_OUTSTATION);
+//     if (outstation == NULL) {
+//         PyErr_SetString(PyExc_TypeError, "Invalid outstation capsule");
+//         return NULL;
+//     }
+//     dnp3_database_transaction_t transaction = {
+//                 .execute = &binary_transaction,
+//                 .on_destroy = NULL,
+//                 .ctx = NULL,
+//             };
+//     dnp3_outstation_transaction(outstation, transaction);
+//     Py_RETURN_NONE;
+
+// }
+
 
 void double_bit_binary_transaction(dnp3_database_t *db, void *context) {
     ((database_points_t *)context)->doubleBitBinaryValue =
@@ -292,6 +356,29 @@ void double_bit_binary_transaction(dnp3_database_t *db, void *context) {
     dnp3_database_update_double_bit_binary_input(db, value, dnp3_update_options_detect_event());
 }
 
+static PyObject* dnp3_double_bit_binary_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to double_bit_binary_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to double_bit_binary_transaction");
+        return NULL;
+    }
+
+    double_bit_binary_transaction(db, context);
+    Py_RETURN_NONE;
+
+}
+
 void binary_output_status_transaction(dnp3_database_t *db, void *context) {
     ((database_points_t *)context)->binaryOutputStatusValue = !((database_points_t *)context)->binaryOutputStatusValue;
 
@@ -300,10 +387,56 @@ void binary_output_status_transaction(dnp3_database_t *db, void *context) {
     dnp3_database_update_binary_output_status(db, value, dnp3_update_options_detect_event());
 }
 
+static PyObject* dnp3_binary_output_status_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to binary_output_status_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to binary_output_status_transaction");
+        return NULL;
+    }
+
+    binary_output_status_transaction(db, context);
+    Py_RETURN_NONE;
+
+}
+
 void counter_transaction(dnp3_database_t *db, void *context) {
     dnp3_counter_t value =
         dnp3_counter_init(7, ++((database_points_t *)context)->counterValue, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
     dnp3_database_update_counter(db, value, dnp3_update_options_detect_event());
+}
+
+static PyObject* dnp3_counter_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to counter_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to counter_transaction");
+        return NULL;
+    }
+
+    counter_transaction(db, context);
+    Py_RETURN_NONE;
+
 }
 
 void frozen_counter_transaction(dnp3_database_t *db, void *context) {
@@ -312,16 +445,85 @@ void frozen_counter_transaction(dnp3_database_t *db, void *context) {
     dnp3_database_update_frozen_counter(db, value, dnp3_update_options_detect_event());
 }
 
+static PyObject* dnp3_frozen_counter_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to frozen_counter_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to frozen_counter_transaction");
+        return NULL;
+    }
+
+    frozen_counter_transaction(db, context);
+    Py_RETURN_NONE;
+
+}
+
 void analog_transaction(dnp3_database_t *db, void *context) {
     dnp3_analog_input_t value =
         dnp3_analog_input_init(7, ++((database_points_t *)context)->analogValue, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
     dnp3_database_update_analog_input(db, value, dnp3_update_options_detect_event());
 }
 
+static PyObject* dnp3_analog_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to analog_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to analog_transaction");
+        return NULL;
+    }
+
+    analog_transaction(db, context);
+    Py_RETURN_NONE;
+
+}
+
 void analog_output_status_transaction(dnp3_database_t *db, void *context) {
     dnp3_analog_output_status_t value = dnp3_analog_output_status_init(7, ++((database_points_t *)context)->analogOutputStatusValue,
                                                                        dnp3_flags_init(DNP3_FLAG_ONLINE), now());
     dnp3_database_update_analog_output_status(db, value, dnp3_update_options_detect_event());
+}
+
+static PyObject* dnp3_analog_output_status_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to analog_output_status_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to analog_output_status_transaction");
+        return NULL;
+    }
+
+    analog_output_status_transaction(db, context);
+    Py_RETURN_NONE;
+
 }
 
 void octet_string_transaction(dnp3_database_t *db, void *context) {
@@ -336,6 +538,29 @@ void octet_string_transaction(dnp3_database_t *db, void *context) {
     dnp3_database_update_octet_string(db, 7, octet_string, dnp3_update_options_detect_event());
 
     dnp3_octet_string_value_destroy(octet_string);
+}
+
+static PyObject* dnp3_octet_string_transaction(PyObject *self, PyObject *args) {
+    PyObject *db_capsule;
+    PyObject *context_capsule;
+    if (!PyArg_ParseTuple(args, "OO", &db_capsule, &context_capsule)) {
+        return NULL;
+    }
+    dnp3_database_t *db = PyCapsule_GetPointer(db_capsule, CAPSULE_NAME_DATABASE); 
+    void *context = PyCapsule_GetPointer(context_capsule, CAPSULE_NAME_DATABASE_POINTS);
+
+    if (db == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid db capsule passed to octet_string_transaction");
+        return NULL;
+    }
+    if (context == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid context capsule passed to octet_string_transaction");
+        return NULL;
+    }
+
+    octet_string_transaction(db, context);
+    Py_RETURN_NONE;
+
 }
 
 void on_connection_state_change(dnp3_connection_state_t state, void *ctx) { 
@@ -694,6 +919,14 @@ static PyMethodDef methods[] = {
     {"add_outstation",  dnp3_add_outstation, METH_VARARGS, "Add an outstation to a server."},
     {"enable_outstation",  dnp3_enable_outstation, METH_VARARGS, "Enable an outstation."},
     {"disable_outstation",  dnp3_disable_outstation, METH_VARARGS, "Disable an outstation."},
+    {"binary_input_transaction", dnp3_binary_input_transaction, METH_VARARGS, "binary transaction"},
+    {"double_bit_binary_transaction", dnp3_double_bit_binary_transaction, METH_VARARGS, "double bit binary transaction"},
+    {"binary_output_status_transaction", dnp3_binary_output_status_transaction, METH_VARARGS, "binary output status transaction"},
+    {"counter_transaction", dnp3_counter_transaction, METH_VARARGS, "counter transaction"},
+    {"frozen_counter_transaction", frozen_counter_transaction, METH_VARARGS, "frozen counter transaction"},
+    {"analog_transaction", analog_transaction, METH_VARARGS, "analog transaction"},
+    {"analog_output_status_transaction", analog_output_status_transaction, METH_VARARGS, "analog output status transaction"},
+    {"octet_string_transaction", octet_string_transaction, METH_VARARGS, "octet string transaction"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
