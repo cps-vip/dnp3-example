@@ -3,7 +3,6 @@ ctypes is a simple way to call C code from Python. This allows us to use the dnp
 
 ## Steps
 ```bash
-cd main
 mkdir build
 cd build
 

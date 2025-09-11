@@ -7,4 +7,4 @@ name = "dnp3-module"
 version = "0.1.0"
 description = "DNP3 extension module"
 authors = [{ name = "Kaden McCartney", email = "kmccartney7@gatech.edu" }]
-requires-python = ">=3.11"
+requires-python = ">=3.13"

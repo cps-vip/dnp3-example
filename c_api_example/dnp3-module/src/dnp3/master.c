@@ -11,7 +11,7 @@
 
 #include "dnp3.h"
 
-static atomic_bool is_shutting_down = ATOMIC_VAR_INIT(false);
+static atomic_bool is_shutting_down = false;
 
 static void log_message(dnp3_log_level_t level, const char *msg) {
     static PyObject *logging_library = NULL;
@@ -105,7 +105,9 @@ dnp3_client_state_listener_t get_client_state_listener()
 }
 
 // PortState listener callback
-void port_state_on_change(dnp3_port_state_t state, void *arg) { printf("PortState = %s\n", dnp3_port_state_to_string(state)); }
+void port_state_on_change(dnp3_port_state_t state, void *arg) { 
+    // printf("PortState = %s\n", dnp3_port_state_to_string(state)); 
+}
 
 dnp3_port_state_listener_t get_port_state_listener()
 {    
@@ -133,110 +135,110 @@ void end_fragment(dnp3_read_type_t read_type, dnp3_response_header_t header, voi
 
 void handle_binary_input(dnp3_header_info_t info, dnp3_binary_input_iterator_t *it, void *arg)
 {
-    printf("Binaries:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Binaries:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_binary_input_t *value = NULL;
     while ((value = dnp3_binary_input_iterator_next(it))) {
-        printf("BI %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        // printf("BI %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
     }
 }
 
 void handle_double_bit_binary_input(dnp3_header_info_t info, dnp3_double_bit_binary_input_iterator_t *it, void *arg)
 {
-    printf("Double Bit Binaries:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Double Bit Binaries:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_double_bit_binary_input_t *value = NULL;
     while ((value = dnp3_double_bit_binary_input_iterator_next(it))) {
-        printf("DBBI %u: Value=%X Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        // printf("DBBI %u: Value=%X Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
     }
 }
 
 void handle_binary_output_status(dnp3_header_info_t info, dnp3_binary_output_status_iterator_t *it, void *arg)
 {
-    printf("Binary Output Statuses:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Binary Output Statuses:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_binary_output_status_t *value = NULL;
     while ((value = dnp3_binary_output_status_iterator_next(it))) {
-        printf("BOS %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        // printf("BOS %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
     }
 }
 
 void handle_counter(dnp3_header_info_t info, dnp3_counter_iterator_t *it, void *arg)
 {
-    printf("Counters:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Counters:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_counter_t *value = NULL;
     while ((value = dnp3_counter_iterator_next(it))) {
-        printf("Counter %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        // printf("Counter %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
     }
 }
 
 void handle_frozen_counter(dnp3_header_info_t info, dnp3_frozen_counter_iterator_t *it, void *arg)
 {
-    printf("Frozen Counters:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Frozen Counters:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_frozen_counter_t *value = NULL;
     while ((value = dnp3_frozen_counter_iterator_next(it))) {
-        printf("Frozen Counter %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        // printf("Frozen Counter %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
     }
 }
 
 void handle_analog_input(dnp3_header_info_t info, dnp3_analog_input_iterator_t *it, void *arg)
 {
-    printf("Analogs:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Analogs:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_analog_input_t *value = NULL;
     while ((value = dnp3_analog_input_iterator_next(it))) {
-        printf("AI %u: Value=%f Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        // printf("AI %u: Value=%f Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
     }
 }
 
 void handle_analog_output_status(dnp3_header_info_t info, dnp3_analog_output_status_iterator_t *it, void *arg)
 {
-    printf("Analog Output Statuses:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Analog Output Statuses:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_analog_output_status_t *value = NULL;
-    while ((value = dnp3_analog_output_status_iterator_next(it))) {
-        printf("AOS %u: Value=%f Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
-    }
+    // while ((value = dnp3_analog_output_status_iterator_next(it))) {
+    //     printf("AOS %u: Value=%f Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+    // }
 }
 
 void handle_octet_strings(dnp3_header_info_t info, dnp3_octet_string_iterator_t *it, void *arg)
 {
-    printf("Octet Strings:\n");
-    printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
-    printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
+    // printf("Octet Strings:\n");
+    // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
+    // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
     dnp3_octet_string_t *value = NULL;
     while ((value = dnp3_octet_string_iterator_next(it))) {
-        printf("Octet String: %u: Value=", value->index);
+        // printf("Octet String: %u: Value=", value->index);
         uint8_t *byte = dnp3_byte_iterator_next(value->value);
         while (byte != NULL) {
-            printf("%02X", *byte);
+            // printf("%02X", *byte);
             byte = dnp3_byte_iterator_next(value->value);
         }
 
-        printf("\n");
+        // printf("\n");
     }
 }
 
 void handle_string_attr(dnp3_header_info_t info, dnp3_string_attr_t attr, uint8_t set, uint8_t variation, const char* value, void *arg)
 {
-    printf("String attribute: %s set: %d var: %d value: %s \n", dnp3_string_attr_to_string(attr), set, variation, value);
+    // printf("String attribute: %s set: %d var: %d value: %s \n", dnp3_string_attr_to_string(attr), set, variation, value);
 }
 // ANCHOR_END: read_handler
 
@@ -260,38 +262,56 @@ dnp3_read_handler_t get_read_handler()
 }
 
 // read callbacks
-void on_read_success(dnp3_nothing_t nothing, void *arg) { printf("read success! \n"); }
-void on_read_failure(dnp3_read_error_t error, void* arg) { printf("read error: %s \n", dnp3_read_error_to_string(error)); }
+void on_read_success(dnp3_nothing_t nothing, void *arg) { 
+    // printf("read success! \n"); 
+}
+void on_read_failure(dnp3_read_error_t error, void* arg) {
+    // printf("read error: %s \n", dnp3_read_error_to_string(error)); 
+}
 
 // Command callbacks
 // ANCHOR: assoc_control_callback
 void on_command_success(dnp3_nothing_t nothing, void* arg)
 {
-    printf("command success!\n");
+    // printf("command success!\n");
 }
 void on_command_error(dnp3_command_error_t result, void *arg)
 {
-    printf("command failed: %s\n", dnp3_command_error_to_string(result));
+    // printf("command failed: %s\n", dnp3_command_error_to_string(result));
 }
 // ANCHOR_END: assoc_control_callback
 
 // time sync callbacks
-void on_time_sync_success(dnp3_nothing_t nothing, void* arg) { printf("time sync success! \n"); }
-void on_time_sync_error(dnp3_time_sync_error_t error, void *arg) { printf("Time sync error: %s\n", dnp3_time_sync_error_to_string(error)); }
+void on_time_sync_success(dnp3_nothing_t nothing, void* arg) { 
+    // printf("time sync success! \n"); 
+}
+void on_time_sync_error(dnp3_time_sync_error_t error, void *arg) {
+    // printf("Time sync error: %s\n", dnp3_time_sync_error_to_string(error)); 
+}
 
 // warm/cold restart callbacks
-void on_restart_success(uint64_t delay, void *arg) { printf("restart success: %" PRIu64 "\n", delay); }
-void on_restart_failure(dnp3_restart_error_t error, void* arg) { printf("Restart failure: %s\n", dnp3_restart_error_to_string(error)); }
+void on_restart_success(uint64_t delay, void *arg) { 
+    // printf("restart success: %" PRIu64 "\n", delay); 
+}
+void on_restart_failure(dnp3_restart_error_t error, void* arg) {
+    // printf("Restart failure: %s\n", dnp3_restart_error_to_string(error)); 
+}
 
 // link status callbacks
-void on_link_status_success(dnp3_nothing_t nothing, void *arg) { printf("link status success!\n"); }
-void on_link_status_failure(dnp3_link_status_error_t error, void* arg) { printf("link status error: %s\n", dnp3_link_status_error_to_string(error)); }
+void on_link_status_success(dnp3_nothing_t nothing, void *arg) {
+    // printf("link status success!\n"); 
+}
+void on_link_status_failure(dnp3_link_status_error_t error, void* arg) {
+    // printf("link status error: %s\n", dnp3_link_status_error_to_string(error)); 
+}
 
 // generic callbacks
-void on_generic_success(dnp3_nothing_t delay, void *arg) { printf("%s success! \n", (const char*) arg); }
+void on_generic_success(dnp3_nothing_t delay, void *arg) { 
+    // printf("%s success! \n", (const char*) arg); 
+}
 void on_generic_failure(dnp3_empty_response_error_t error, void *arg)
 {
-    printf("%s failure: %s\n", (const char *)arg, dnp3_empty_response_error_to_string(error));
+    // printf("%s failure: %s\n", (const char *)arg, dnp3_empty_response_error_to_string(error));
 }
 
 // ANCHOR: association_config

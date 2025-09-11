@@ -1,4 +1,7 @@
-c_api_example/dnp3-module/src/dnp3/include/
+c_api_example/dnp3-module/src/dnp3/lib
+c_api_example/dnp3-module/src/dnp3/include
+
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
