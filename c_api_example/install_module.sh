@@ -24,6 +24,6 @@ cp _deps/dnp3-src/include/dnp3.h ../src/dnp3
 cp "_deps/dnp3-src/lib/$DNP3_RUST_TARGET/libdnp3_ffi.so" ../src/dnp3
 
 cd ..
-python -m build
+CFLAGS="-O0 -g3" python -m build
 pip install .
 

@@ -281,14 +281,30 @@ typedef struct database_points_t {
 
 void binary_transaction(dnp3_database_t *db, void *context) {
 //   ((database_points_t *)context)->binaryValue = !((database_points_t *)context)->binaryValue;
+    dnp3_param_error_t error;
+    dnp3_param_error_t error1;
+   dnp3_param_error_t error2;
 
-    dnp3_binary_input_t *my_input;
-    dnp3_database_get_binary_input(db, 7, my_input);
-    bool current_value = my_input->value;
 
-    dnp3_binary_input_t value =
-        dnp3_binary_input_init(7, !current_value, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
-    dnp3_database_update_binary_input(db, value, dnp3_update_options_detect_event());
+   dnp3_binary_input_t *my_input;
+   error1 = dnp3_database_get_binary_input(db, 7, my_input);
+   bool current_value = my_input->value;
+   printf("%d\n", error1);
+   printf("%d\n", (int)current_value);
+
+
+   dnp3_binary_input_t value =
+       dnp3_binary_input_init(7, !current_value, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
+   dnp3_database_update_binary_input(db, value, dnp3_update_options_detect_event());
+
+
+   error2 = dnp3_database_get_binary_input(db, 7, my_input);
+   //printf(var2);
+   printf("%d\n", error2);
+   dnp3_binary_input_t *verified_input;
+   error = dnp3_database_get_binary_input(db, 7, verified_input);
+   printf("Second read error code: %d\n", error);
+
 }
 
 static PyObject* dnp3_binary_input_transaction(PyObject *self, PyObject *args) {
@@ -311,13 +327,16 @@ printf("the first\n");
         return NULL;
     }
     printf("the fifth\n");
+
+
+
     dnp3_database_transaction_t transaction = {
                 .execute = &binary_transaction,
                 .on_destroy = NULL,
                 .ctx = NULL,
             };
             printf("the sixth\n");
-    dnp3_outstation_transaction(outstation, transaction);
+    //dnp3_outstation_transaction(outstation, transaction);
     printf("the seventh\n");
     PyGILState_Release(gstate);
     Py_RETURN_NONE;

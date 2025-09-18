@@ -27,13 +27,14 @@ if __name__ == '__main__':
                                 outstation1_addr[1])
        outstation1.activate()
 
+       outstation1.binary2_input_transaction()
 
-       while True :
-           x = input("Enter value: ")
-           if (x == 'b'):
-               outstation1.binary2_input_transaction()
-           elif (x == 'q'):
-               break
+    #    while True :
+    #        x = input("Enter value: ")
+    #        if (x == 'b'):
+    #            outstation1.binary2_input_transaction()
+    #        elif (x == 'q'):
+    #            break
    #    outstation1._tcpserver.log_stuff()
    #    logger.info("Activated outstation 1")
 
