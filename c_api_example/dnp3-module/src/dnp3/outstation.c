@@ -280,68 +280,82 @@ typedef struct database_points_t {
 } database_points_t;
 
 void binary_transaction(dnp3_database_t *db, void *context) {
-//   ((database_points_t *)context)->binaryValue = !((database_points_t *)context)->binaryValue;
-    dnp3_param_error_t error;
-    dnp3_param_error_t error1;
-   dnp3_param_error_t error2;
+    dnp3_param_error_t err;
+    dnp3_binary_input_t old_bin_input;
 
+    // Use a random index for testing purposes
+    // Will want to make this a parameter in the future
+    uint16_t index = 7;
+    err = dnp3_database_get_binary_input(db, index, &old_bin_input);
 
-   dnp3_binary_input_t *my_input;
-   error1 = dnp3_database_get_binary_input(db, 7, my_input);
-   bool current_value = my_input->value;
-   printf("%d\n", error1);
-   printf("%d\n", (int)current_value);
+    if (err) {
+        fprintf(
+            stderr,
+            "dnp3_database_get_binary_input() failed with error(%d): %s\n",
+            err,
+            dnp3_param_error_to_string(err));
+        return;
+    }
 
+    dnp3_binary_input_t new_bin_input = dnp3_binary_input_init(
+        index,
+        !old_bin_input.value,
+        dnp3_flags_init(DNP3_FLAG_ONLINE),
+        now());
 
-   dnp3_binary_input_t value =
-       dnp3_binary_input_init(7, !current_value, dnp3_flags_init(DNP3_FLAG_ONLINE), now());
-   dnp3_database_update_binary_input(db, value, dnp3_update_options_detect_event());
+    bool success = dnp3_database_update_binary_input(
+        db,
+        new_bin_input,
+        dnp3_update_options_detect_event());
+    if (!success) {
+        fprintf(stderr, "Failed to update binary input\n");
+        return;
+    }
 
-
-   error2 = dnp3_database_get_binary_input(db, 7, my_input);
-   //printf(var2);
-   printf("%d\n", error2);
-   dnp3_binary_input_t *verified_input;
-   error = dnp3_database_get_binary_input(db, 7, verified_input);
-   printf("Second read error code: %d\n", error);
-
+    dnp3_binary_input_t verification;
+    err = dnp3_database_get_binary_input(db, index, &verification);
+    if (err) {
+        fprintf(
+            stderr,
+            "dnp3_database_get_binary_input() failed with error(%d): %s\n",
+            err,
+            dnp3_param_error_to_string(err));
+        return;
+    }
+    printf(
+        "Updated binary input at index %d! Old value: %d, new value: %d\n",
+        verification.index,
+        old_bin_input.value,
+        verification.value);
 }
 
 static PyObject* dnp3_binary_input_transaction(PyObject *self, PyObject *args) {
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
-    //create struct and call 
-printf("the first\n");
 
     PyObject *outstation_capsule;
-    printf("the second\n");
     if (!PyArg_ParseTuple(args, "O", &outstation_capsule)) {
         return NULL;
     }
-    printf("the third\n");
 
     dnp3_outstation_t *outstation = PyCapsule_GetPointer(outstation_capsule, CAPSULE_NAME_OUTSTATION);
-    printf("the fourth\n");
     if (outstation == NULL) {
         PyErr_SetString(PyExc_TypeError, "Invalid outstation capsule");
         return NULL;
     }
-    printf("the fifth\n");
 
+    dnp3_database_transaction_t transaction =
+        {
+            .execute = &binary_transaction,
+            .on_destroy = NULL,
+            .ctx = NULL,
+        };
+    printf("Starting dnp3_binary_input_transaction()\n");
+    dnp3_outstation_transaction(outstation, transaction);
 
-
-    dnp3_database_transaction_t transaction = {
-                .execute = &binary_transaction,
-                .on_destroy = NULL,
-                .ctx = NULL,
-            };
-            printf("the sixth\n");
-    //dnp3_outstation_transaction(outstation, transaction);
-    printf("the seventh\n");
     PyGILState_Release(gstate);
+    printf("Finished dnp3_binary_input_transaction()\n");
     Py_RETURN_NONE;
-
-
 }
 
 // static PyObject* dnp3_binary_output_status_transaction(PyObject *self, PyObject *args) {
@@ -942,10 +956,10 @@ static PyMethodDef methods[] = {
     {"double_bit_binary_transaction", dnp3_double_bit_binary_transaction, METH_VARARGS, "double bit binary transaction"},
     {"binary_output_status_transaction", dnp3_binary_output_status_transaction, METH_VARARGS, "binary output status transaction"},
     {"counter_transaction", dnp3_counter_transaction, METH_VARARGS, "counter transaction"},
-    {"frozen_counter_transaction", frozen_counter_transaction, METH_VARARGS, "frozen counter transaction"},
-    {"analog_transaction", analog_transaction, METH_VARARGS, "analog transaction"},
-    {"analog_output_status_transaction", analog_output_status_transaction, METH_VARARGS, "analog output status transaction"},
-    {"octet_string_transaction", octet_string_transaction, METH_VARARGS, "octet string transaction"},
+    {"frozen_counter_transaction", dnp3_frozen_counter_transaction, METH_VARARGS, "frozen counter transaction"},
+    {"analog_transaction", dnp3_analog_transaction, METH_VARARGS, "analog transaction"},
+    {"analog_output_status_transaction", dnp3_analog_output_status_transaction, METH_VARARGS, "analog output status transaction"},
+    {"octet_string_transaction", dnp3_octet_string_transaction, METH_VARARGS, "octet string transaction"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

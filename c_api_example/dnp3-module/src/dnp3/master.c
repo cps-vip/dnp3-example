@@ -139,9 +139,10 @@ void handle_binary_input(dnp3_header_info_t info, dnp3_binary_input_iterator_t *
     // printf("Qualifier: %s \n", dnp3_qualifier_code_to_string(info.qualifier));
     // printf("Variation: %s \n", dnp3_variation_to_string(info.variation));
 
+    printf("Master received binary inputs:\n");
     dnp3_binary_input_t *value = NULL;
     while ((value = dnp3_binary_input_iterator_next(it))) {
-        // printf("BI %u: Value=%u Flags=0x%02X Time=%" PRIu64 "\n", value->index, value->value, value->flags.value, value->time.value);
+        printf("    Index %u: %u\n", value->index, value->value);
     }
 }
 

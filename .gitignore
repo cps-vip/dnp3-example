@@ -1,5 +1,4 @@
-c_api_example/dnp3-module/src/dnp3/lib
-c_api_example/dnp3-module/src/dnp3/include
+c_api_example/dnp3-module/src/dnp3/dnp3.h
 
 .vscode/
 
