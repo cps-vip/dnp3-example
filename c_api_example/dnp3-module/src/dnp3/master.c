@@ -22,10 +22,11 @@ void internal_binary_input_callback(dnp3_header_info_t info, dnp3_binary_input_i
     }
     printf("Calling callback\n");
 
-    Py_BEGIN_CRITICAL_SECTION(global_self);
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
     printf("Calling callback2\n");
     PyObject_CallNoArgs(global_binary_input_callback);
-    Py_END_CRITICAL_SECTION();
+    PyGILState_Release(gstate);
 
     printf("Done calling callback\n");
 }
@@ -109,7 +110,18 @@ dnp3_logger_t get_logger() {
 
 // ClientState listener callback
 void client_state_on_change(dnp3_client_state_t state, void *arg) { 
-    // No logging here, see https://github.com/cps-vip/cps-cosimulation-env/wiki/Kaden-McCartney's-Notebook#outstanding-issues
+    // Try to get logging here working. See these notebook entries:
+    //     https://github.com/cps-vip/cps-cosimulation-env/wiki/Kaden-McCartney's-Notebook#outstanding-issues
+    //     https://github.com/cps-vip/cps-cosimulation-env/wiki/Kaden-McCartney's-Notebook#0915---0921
+    //
+    // char *string;
+    // if (asprintf(&string, "ClientState = %s\n", dnp3_client_state_to_string(state)) < 0) {
+    //     fprintf(stderr, "Failed to allocate memory for log message\n");
+    //     return;
+    // }
+    //
+    // on_log_message(DNP3_LOG_LEVEL_INFO, string, NULL);
+    // free(string);
 }
 
 dnp3_client_state_listener_t get_client_state_listener()
