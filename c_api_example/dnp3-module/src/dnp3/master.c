@@ -110,18 +110,14 @@ dnp3_logger_t get_logger() {
 
 // ClientState listener callback
 void client_state_on_change(dnp3_client_state_t state, void *arg) { 
-    // Try to get logging here working. See these notebook entries:
-    //     https://github.com/cps-vip/cps-cosimulation-env/wiki/Kaden-McCartney's-Notebook#outstanding-issues
-    //     https://github.com/cps-vip/cps-cosimulation-env/wiki/Kaden-McCartney's-Notebook#0915---0921
-    //
-    // char *string;
-    // if (asprintf(&string, "ClientState = %s\n", dnp3_client_state_to_string(state)) < 0) {
-    //     fprintf(stderr, "Failed to allocate memory for log message\n");
-    //     return;
-    // }
-    //
-    // on_log_message(DNP3_LOG_LEVEL_INFO, string, NULL);
-    // free(string);
+    char *string;
+    if (asprintf(&string, "ClientState = %s\n", dnp3_client_state_to_string(state)) < 0) {
+        fprintf(stderr, "Failed to allocate memory for log message\n");
+        return;
+    }
+
+    on_log_message(DNP3_LOG_LEVEL_INFO, string, NULL);
+    free(string);
 }
 
 dnp3_client_state_listener_t get_client_state_listener()
